@@ -4,27 +4,34 @@ This document describes the Git branching strategy for the Regional Gap Analyzer
 
 ## Overview
 
-We use a **lightweight trunk-based development** workflow optimized for a 6-person team working in a single repository. This approach emphasizes:
+We use a **Git-Flow inspired** workflow optimized for a 6-person team working in a single repository. This approach emphasizes:
 
 - Short-lived feature branches
-- Frequent integration to `main`
+- Integration to `develop` (not directly to `main`)
 - Protected branches with required reviews
 - Automated CI checks before merge
+- Periodic releases from `develop` to `main`
 
 ## Protected Branches
 
 ### `main`
-- **Always stable and demo-ready**
+- **Always stable and production-ready**
 - No direct pushes allowed
-- All changes via Pull Request
+- Only receives merges from `develop` or hotfix branches
+- Represents the latest release
+
+### `develop`
+- **Integration branch for features**
+- No direct pushes allowed
+- All feature branches merge here via PR
 - Requires at least 1 reviewer approval
 - CI must pass before merge
 - Prefer squash merge to keep history clean
 
 ### `release/demo` (optional)
-- Created before demo week as a freeze branch
+- Created before demo week as a freeze branch from `develop`
 - Only critical bug fixes allowed
-- Merges back to `main` after demo
+- Merges back to both `main` and `develop` after demo
 
 ## Working Branches
 
@@ -65,9 +72,9 @@ chore/docs/api-contract-update
 ### 1. Start a New Feature
 
 ```bash
-# Ensure you're on latest main
-git checkout main
-git pull origin main
+# Ensure you're on latest develop
+git checkout develop
+git pull origin develop
 
 # Create feature branch
 git checkout -b feature/api/my-new-feature
@@ -86,7 +93,7 @@ git push -u origin feature/api/my-new-feature
 
 ### 3. Create Pull Request
 
-1. Go to GitHub and create a Pull Request
+1. Go to GitHub and create a Pull Request **targeting `develop`**
 2. Fill in the PR template
 3. Request review from at least 1 team member
 4. Ensure CI passes
@@ -94,19 +101,29 @@ git push -u origin feature/api/my-new-feature
 ### 4. Review and Merge
 
 1. Address reviewer feedback
-2. Once approved and CI passes, **squash merge** to main
+2. Once approved and CI passes, **squash merge** to `develop`
 3. Delete the feature branch
 
 ```bash
 # If merging locally (simulating PR merge)
-git checkout main
+git checkout develop
 git merge --squash feature/api/my-new-feature
 git commit -m "feat(api): add endpoint for region scoring (#123)"
-git push origin main
+git push origin develop
 
 # Delete branch
 git branch -d feature/api/my-new-feature
 git push origin --delete feature/api/my-new-feature
+```
+
+### 5. Release to Main (Periodic)
+
+When `develop` is stable and ready for release:
+
+```bash
+git checkout main
+git merge develop
+git push origin main
 ```
 
 ## Commit Message Convention
