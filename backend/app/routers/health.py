@@ -3,6 +3,7 @@ Health check router.
 Provides endpoints for monitoring application health.
 """
 
+from datetime import datetime, timezone
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -22,6 +23,15 @@ class HealthSimpleResponse(BaseModel):
     """Simple health check response."""
 
     status: str
+
+
+class HealthDetailedResponse(BaseModel):
+    """Detailed health check response with metadata."""
+
+    status: str
+    database: str
+    version: str
+    timestamp: str
 
 
 @router.get(
@@ -53,4 +63,25 @@ async def health_check_detailed() -> HealthResponse:
     return HealthResponse(
         status="ok" if db_healthy else "degraded",
         database="connected" if db_healthy else "disconnected",
+    )
+
+
+@router.get(
+    "/health/full",
+    response_model=HealthDetailedResponse,
+    summary="Full health check with metadata",
+    description="Returns complete health status with version and timestamp.",
+)
+async def health_check_full() -> HealthDetailedResponse:
+    """
+    Full health check with version info and timestamp.
+    Useful for monitoring and debugging.
+    """
+    db_healthy = await ping_database()
+
+    return HealthDetailedResponse(
+        status="ok" if db_healthy else "degraded",
+        database="connected" if db_healthy else "disconnected",
+        version="0.1.0",
+        timestamp=datetime.now(timezone.utc).isoformat(),
     )
