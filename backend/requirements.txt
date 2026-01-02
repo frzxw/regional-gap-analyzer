@@ -1,0 +1,24 @@
+# Regional Gap Analyzer Backend
+# Python 3.11+ required
+
+# Core
+fastapi>=0.109.0,<1.0.0
+uvicorn[standard]>=0.27.0,<1.0.0
+pydantic>=2.5.0,<3.0.0
+pydantic-settings>=2.1.0,<3.0.0
+
+# MongoDB - using motor for async operations
+motor>=3.3.0,<4.0.0
+
+# Data processing
+pandas>=2.1.0,<3.0.0
+numpy>=1.26.0,<2.0.0
+
+# Utilities
+python-dotenv>=1.0.0,<2.0.0
+httpx>=0.26.0,<1.0.0
+
+# Development
+pytest>=7.4.0,<8.0.0
+pytest-asyncio>=0.23.0,<1.0.0
+ruff>=0.1.0,<1.0.0
