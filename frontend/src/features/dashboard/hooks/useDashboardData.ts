@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { api } from '@/utils/api';
 
 interface DashboardData {
   regions: number;
@@ -29,15 +29,15 @@ export function useDashboardData(year?: number) {
 
       const rankings = scoresRes.rankings || [];
       const scores = rankings.map((r: { score: number }) => r.score);
-      const avgScore = scores.length > 0 
-        ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length 
+      const avgScore = scores.length > 0
+        ? scores.reduce((a: number, b: number) => a + b, 0) / scores.length
         : 0;
 
       // Calculate gap index (coefficient of variation)
       const gapIndex = scores.length > 1
         ? Math.sqrt(
-            scores.reduce((sum: number, s: number) => sum + Math.pow(s - avgScore, 2), 0) / scores.length
-          ) / avgScore
+          scores.reduce((sum: number, s: number) => sum + Math.pow(s - avgScore, 2), 0) / scores.length
+        ) / avgScore
         : 0;
 
       return {

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import dynamic from "next/dynamic";
-import { healthApi, type HealthDetailedResponse } from "@/lib/api";
+import { healthApi, type HealthDetailedResponse } from "@/utils/api";
 
 // Dynamic import for Leaflet (client-side only)
 const MapComponent = dynamic(() => import("@/components/map/MapComponent"), {
@@ -99,11 +99,10 @@ export default function DashboardPage() {
             ) : (
               <div className="flex items-center">
                 <span
-                  className={`h-3 w-3 rounded-full mr-2 ${
-                    health?.database === "connected"
+                  className={`h-3 w-3 rounded-full mr-2 ${health?.database === "connected"
                       ? "bg-green-500"
                       : "bg-yellow-500"
-                  }`}
+                    }`}
                 ></span>
                 <span
                   className={
