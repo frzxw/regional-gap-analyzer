@@ -33,9 +33,9 @@ from app.routers import (
     pdrb_perkapita_router, 
     persentase_penduduk_miskin_router, 
     rata_rata_upah_router, 
-    tingkat_pengangguran_terbuka_router
+    tingkat_pengangguran_terbuka_router,
+    unemployment_analysis_router
 )
-from app.routers import health_router, regions_router, angkatan_kerja_router, gini_ratio_router, indeks_harga_konsumen_router, indeks_pembangunan_manusia_router, inflasi_tahunan_router, kependudukan_router, pdrb_perkapita_router, persentase_penduduk_miskin_router, rata_rata_upah_router, tingkat_pengangguran_terbuka_router, unemployment_analysis_router
 
 
 @asynccontextmanager
