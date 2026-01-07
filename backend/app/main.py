@@ -9,7 +9,32 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.settings import get_settings
 from app.db import close_database
-from app.routers import health_router, regions_router, angkatan_kerja_router, gini_ratio_router, indeks_harga_konsumen_router, indeks_pembangunan_manusia_router, inflasi_tahunan_router, kependudukan_router, pdrb_perkapita_router, persentase_penduduk_miskin_router, rata_rata_upah_router, tingkat_pengangguran_terbuka_router
+from app.routers import (
+    health_router, 
+    regions_router, 
+    # CRUD routers (new)
+    angkatan_kerja_crud_router,
+    gini_ratio_crud_router,
+    ipm_crud_router,
+    persentase_penduduk_miskin_crud_router,
+    ihk_crud_router,
+    inflasi_tahunan_crud_router,
+    kependudukan_crud_router,
+    pdrb_per_kapita_crud_router,
+    rata_rata_upah_bersih_crud_router,
+    tpt_crud_router,
+    # Old analytics routers
+    angkatan_kerja_router, 
+    gini_ratio_router, 
+    indeks_harga_konsumen_router, 
+    indeks_pembangunan_manusia_router, 
+    inflasi_tahunan_router, 
+    kependudukan_router, 
+    pdrb_perkapita_router, 
+    persentase_penduduk_miskin_router, 
+    rata_rata_upah_router, 
+    tingkat_pengangguran_terbuka_router
+)
 
 
 @asynccontextmanager
@@ -56,6 +81,20 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(health_router)
     app.include_router(regions_router, prefix="/api/v1")
+    
+    # CRUD routers
+    app.include_router(angkatan_kerja_crud_router, prefix="/api/v1")
+    app.include_router(gini_ratio_crud_router, prefix="/api/v1")
+    app.include_router(ipm_crud_router, prefix="/api/v1")
+    app.include_router(persentase_penduduk_miskin_crud_router, prefix="/api/v1")
+    app.include_router(ihk_crud_router, prefix="/api/v1")
+    app.include_router(inflasi_tahunan_crud_router, prefix="/api/v1")
+    app.include_router(kependudukan_crud_router, prefix="/api/v1")
+    app.include_router(pdrb_per_kapita_crud_router, prefix="/api/v1")
+    app.include_router(rata_rata_upah_bersih_crud_router, prefix="/api/v1")
+    app.include_router(tpt_crud_router, prefix="/api/v1")
+    
+    # Old analytics routers
     app.include_router(angkatan_kerja_router, prefix="/api/v1")
     app.include_router(gini_ratio_router, prefix="/api/v1")
     app.include_router(indeks_harga_konsumen_router, prefix="/api/v1")

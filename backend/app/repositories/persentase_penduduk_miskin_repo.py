@@ -98,3 +98,34 @@ class PersentasePendudukMiskinRepository:
                 return province["properties"]["PROVINSI"]
 
         return None
+
+    # CRUD methods for new CRUD router
+    async def find_by_province_and_year(self, province_id: str, year: int):
+        """Find single record by province_id and year."""
+        collection = self.db["persentase_penduduk_miskin"]
+        query = {"province_id": province_id, "tahun": year}
+        return await collection.find_one(query)
+
+    async def create(self, data: dict):
+        """Create new record."""
+        collection = self.db["persentase_penduduk_miskin"]
+        result = await collection.insert_one(data)
+        data["_id"] = result.inserted_id
+        return data
+
+    async def update(self, province_id: str, year: int, data: dict) -> bool:
+        """Update existing record."""
+        collection = self.db["persentase_penduduk_miskin"]
+        query = {"province_id": province_id, "tahun": year}
+        update_data = {k: v for k, v in data.items() if k not in ["province_id", "tahun"]}
+        if not update_data:
+            return False
+        result = await collection.update_one(query, {"$set": update_data})
+        return result.modified_count > 0
+
+    async def delete(self, province_id: str, year: int) -> bool:
+        """Delete record."""
+        collection = self.db["persentase_penduduk_miskin"]
+        query = {"province_id": province_id, "tahun": year}
+        result = await collection.delete_one(query)
+        return result.deleted_count > 0

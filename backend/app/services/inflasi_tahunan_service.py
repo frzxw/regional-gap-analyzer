@@ -105,3 +105,32 @@ class InflasiTahunanService:
             enriched.append(InflasiTahunanRecord(**enriched_record))
 
         return enriched
+
+    # CRUD methods for new CRUD router
+    async def get_by_province_and_year(self, province_id: str, year: int):
+        """Get single record by province_id and year."""
+        db = await get_database()
+        repo = InflasiTahunanRepository(db)
+        return await repo.find_by_province_and_year(province_id, year)
+
+    async def create(self, data: dict):
+        """Create new record."""
+        db = await get_database()
+        repo = InflasiTahunanRepository(db)
+        return await repo.create(data)
+
+    async def update(self, province_id: str, year: int, data: dict) -> bool:
+        """Update existing record."""
+        db = await get_database()
+        repo = InflasiTahunanRepository(db)
+        return await repo.update(province_id, year, data)
+
+    async def delete(self, province_id: str, year: int) -> bool:
+        """Delete record."""
+        db = await get_database()
+        repo = InflasiTahunanRepository(db)
+        return await repo.delete(province_id, year)
+
+
+# Singleton instance for dependency injection
+inflasi_tahunan_service = InflasiTahunanService()

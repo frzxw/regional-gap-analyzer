@@ -100,3 +100,40 @@ class GiniRatioService:
         items, total = await repo.find_by_year(year, skip=skip, limit=limit)
         items = await self._enrich_records_with_province_names(items)
         return items, total
+
+    # CRUD methods for new CRUD router
+    async def get_by_province_and_year(
+        self, province_id: str, year: int
+    ) -> Optional[Dict]:
+        """Get single record by province_id and year."""
+        db = await get_database()
+        repo = GiniRatioRepository(db)
+        record = await repo.find_by_province_and_year(province_id, year)
+        if record:
+            record = await self._enrich_with_province_name(record)
+        return record
+
+    async def create(self, data: Dict) -> Dict:
+        """Create new record."""
+        db = await get_database()
+        repo = GiniRatioRepository(db)
+        result = await repo.create(data)
+        return result
+
+    async def update(self, province_id: str, year: int, data: Dict) -> bool:
+        """Update existing record."""
+        db = await get_database()
+        repo = GiniRatioRepository(db)
+        success = await repo.update(province_id, year, data)
+        return success
+
+    async def delete(self, province_id: str, year: int) -> bool:
+        """Delete record."""
+        db = await get_database()
+        repo = GiniRatioRepository(db)
+        success = await repo.delete(province_id, year)
+        return success
+
+
+# Singleton instance for dependency injection
+gini_ratio_service = GiniRatioService()

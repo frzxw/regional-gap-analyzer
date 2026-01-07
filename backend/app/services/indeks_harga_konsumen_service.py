@@ -100,3 +100,7 @@ class IndeksHargaKonsumenService:
         items, total = await repo.find_by_year(year, skip=skip, limit=limit)
         items = await self._enrich_records_with_province_names(items)
         return items, total
+
+
+# Singleton instance for dependency injection
+indeks_harga_konsumen_service = IndeksHargaKonsumenService()
