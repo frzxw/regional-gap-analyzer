@@ -105,3 +105,8 @@ data/processed/*.parquet
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/geo/.gitkeep
+
+# =========================
+# Donor folder (NEVER commit)
+# =========================
+v0-indonesia-inequality-dashboard/
