@@ -26,6 +26,7 @@ from app.routers.pdrb_perkapita import router as pdrb_perkapita_router
 from app.routers.persentase_penduduk_miskin import router as persentase_penduduk_miskin_router
 from app.routers.rata_rata_upah import router as rata_rata_upah_router
 from app.routers.tingkat_pengangguran_terbuka import router as tingkat_pengangguran_terbuka_router
+from app.routers.unemployment_analysis import router as unemployment_analysis_router
 
 __all__ = [
     "health_router", 
@@ -53,3 +54,4 @@ __all__ = [
     "rata_rata_upah_router", 
     "tingkat_pengangguran_terbuka_router"
 ]
+__all__ = ["health_router", "regions_router", "angkatan_kerja_router", "gini_ratio_router", "indeks_harga_konsumen_router", "indeks_pembangunan_manusia_router", "inflasi_tahunan_router", "kependudukan_router", "pdrb_perkapita_router", "persentase_penduduk_miskin_router", "rata_rata_upah_router", "tingkat_pengangguran_terbuka_router", "unemployment_analysis_router"]
