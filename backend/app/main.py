@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.settings import get_settings
 from app.db import close_database
-from app.routers import health_router, regions_router, angkatan_kerja_router, gini_ratio_router
+from app.routers import health_router, regions_router, angkatan_kerja_router, gini_ratio_router, indeks_harga_konsumen_router, indeks_pembangunan_manusia_router, inflasi_tahunan_router, kependudukan_router, pdrb_perkapita_router, persentase_penduduk_miskin_router, rata_rata_upah_router, tingkat_pengangguran_terbuka_router
 
 
 @asynccontextmanager
@@ -58,6 +58,14 @@ def create_app() -> FastAPI:
     app.include_router(regions_router, prefix="/api/v1")
     app.include_router(angkatan_kerja_router, prefix="/api/v1")
     app.include_router(gini_ratio_router, prefix="/api/v1")
+    app.include_router(indeks_harga_konsumen_router, prefix="/api/v1")
+    app.include_router(indeks_pembangunan_manusia_router, prefix="/api/v1")
+    app.include_router(inflasi_tahunan_router, prefix="/api/v1")
+    app.include_router(kependudukan_router, prefix="/api/v1")
+    app.include_router(pdrb_perkapita_router, prefix="/api/v1")
+    app.include_router(persentase_penduduk_miskin_router, prefix="/api/v1")
+    app.include_router(rata_rata_upah_router, prefix="/api/v1")
+    app.include_router(tingkat_pengangguran_terbuka_router, prefix="/api/v1")
 
     return app
 

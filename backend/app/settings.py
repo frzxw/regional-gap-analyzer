@@ -11,9 +11,9 @@ from pathlib import Path
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
-    # MongoDB - dari .env
-    mongo_uri: str = "mongodb+srv://root:testpassword@nosql.i36jyas.mongodb.net/"
-    mongo_db: str = "db_geosantara"
+    # MongoDB
+    mongo_uri: str
+    mongo_db: str
 
     # API
     api_host: str = "0.0.0.0"
