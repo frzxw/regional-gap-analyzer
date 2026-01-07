@@ -134,6 +134,19 @@ class GiniRatioService:
         success = await repo.delete(province_id, year)
         return success
 
+    async def list_all(
+        self, tahun: Optional[int] = None, page: int = 1, page_size: int = 50
+    ) -> List[Dict]:
+        """List all records with optional year filter."""
+        skip = (page - 1) * page_size
+        items, _ = await self.get_all_gini_ratio(year=tahun, skip=skip, limit=page_size)
+        return items
+
+    async def count(self, tahun: Optional[int] = None) -> int:
+        """Count records with optional year filter."""
+        _, total = await self.get_all_gini_ratio(year=tahun, skip=0, limit=1)
+        return total
+
 
 # Singleton instance for dependency injection
 gini_ratio_service = GiniRatioService()

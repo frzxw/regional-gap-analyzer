@@ -192,9 +192,7 @@ async def run_full_pipeline(
 
     Stages:
     1. Ingestion - Read data from source
-    2. Validation - Validate schema and quality
-    3. Transformation - Normalize values
-    4. Import - Save to database
+    2. Import - Save to database by indicator collection
 
     Args:
         file_path: Path to the data file
@@ -218,39 +216,99 @@ async def run_full_pipeline(
     )
 
     # Stage 1: Ingestion
-    ingest_result = await run_ingestion(
-        file_path, indicator_code, year, source_type, **kwargs
-    )
-    if not ingest_result.success:
-        final_result.message = f"Pipeline failed at ingestion: {ingest_result.message}"
-        final_result.errors = ingest_result.errors
-        return final_result
-
-    # Stage 2: Validation
-    records = []  # In real implementation, get from ingestion result
-    validation_result = await run_validation(records)
-    if not validation_result.success:
-        final_result.message = f"Pipeline failed at validation: {validation_result.message}"
-        final_result.errors = validation_result.errors
-        final_result.warnings = validation_result.warnings
-        return final_result
-
-    # Stage 3: Transformation
-    transform_result = await run_transformation(records)
-    if not transform_result.success:
-        final_result.message = f"Pipeline failed at transformation: {transform_result.message}"
-        final_result.errors = transform_result.errors
-        return final_result
-
-    # Stage 4: Import to database
-    if save_to_db and records:
-        try:
-            import_result = await imports_service.import_indicators(
-                records,
-                source_name=source_name or source_type,
-                upsert=True,
+    try:
+        if source_type == "bps" or source_type == "file":
+            records = await bps_ingester.ingest_from_file(
+                file_path, indicator_code, year, **kwargs
             )
-            final_result.records_imported = import_result.get("inserted", 0)
+        else:
+            mapping = kwargs.get("mapping", {
+                "region_code": "region_code",
+                "value": "value",
+            })
+            records = await file_ingester.ingest(
+                file_path, mapping, {"indicator_code": indicator_code, "year": year}
+            )
+        
+        final_result.records_processed = len(records)
+        logger.info(f"Ingested {len(records)} records")
+        
+    except Exception as e:
+        logger.error(f"Ingestion failed: {e}")
+        final_result.errors.append(str(e))
+        final_result.message = f"Ingestion failed: {e}"
+        return final_result
+
+    if not records:
+        final_result.success = True
+        final_result.message = f"No records to import from file"
+        final_result.duration_seconds = (datetime.utcnow() - start_time).total_seconds()
+        return final_result
+
+    # Stage 2: Import to database by indicator collection
+    if save_to_db:
+        try:
+            from app.db import get_database
+            
+            # Map indicator code to collection name
+            collection_mapping = {
+                "gini_ratio": "gini_ratio",
+                "ipm": "indeks_pembangunan_manusia",
+                "tpt": "tingkat_pengangguran_terbuka",
+                "kependudukan": "kependudukan",
+                "pdrb_per_kapita": "pdrb_per_kapita",
+                "ihk": "indeks_harga_konsumen",
+                "inflasi_tahunan": "inflasi_tahunan",
+                "persentase_penduduk_miskin": "persentase_penduduk_miskin",
+                "angkatan_kerja": "angkatan_kerja",
+                "rata_rata_upah_bersih": "rata_rata_upah_bersih",
+            }
+            
+            collection_name = collection_mapping.get(indicator_code, indicator_code)
+            
+            db = await get_database()
+            collection = db[collection_name]
+            
+            # Insert records
+            inserted_count = 0
+            for record in records:
+                # Add metadata
+                record["indikator"] = indicator_code
+                record["created_at"] = datetime.utcnow()
+                record["source_name"] = source_name or file_path
+                
+                try:
+                    # Upsert by province_id and tahun
+                    result = await collection.update_one(
+                        {
+                            "province_id": record.get("province_id"),
+                            "tahun": record.get("tahun"),
+                        },
+                        {"$set": record},
+                        upsert=True
+                    )
+                    if result.upserted_id or result.modified_count > 0:
+                        inserted_count += 1
+                except Exception as e:
+                    logger.warning(f"Failed to insert record: {e}")
+            
+            final_result.records_imported = inserted_count
+            logger.info(f"Imported {inserted_count} records to {collection_name}")
+            
+            # Log this import to import_logs for history tracking
+            import_log = {
+                "name": source_name or file_path.split("/")[-1] if "/" in str(file_path) else str(file_path),
+                "indicator_code": indicator_code,
+                "collection": collection_name,
+                "tahun": year,
+                "records_count": inserted_count,
+                "records_processed": len(records),
+                "source_type": source_type,
+                "created_at": datetime.utcnow(),
+            }
+            await db["import_logs"].insert_one(import_log)
+            logger.info(f"Logged import to import_logs")
+            
         except Exception as e:
             logger.error(f"Import failed: {e}")
             final_result.errors.append(f"Import failed: {e}")
@@ -258,7 +316,6 @@ async def run_full_pipeline(
             return final_result
 
     final_result.success = True
-    final_result.records_processed = ingest_result.records_processed
     final_result.message = (
         f"Pipeline completed: {final_result.records_processed} processed, "
         f"{final_result.records_imported} imported"
@@ -267,3 +324,5 @@ async def run_full_pipeline(
 
     logger.info(f"Pipeline completed: {final_result.message}")
     return final_result
+
+
