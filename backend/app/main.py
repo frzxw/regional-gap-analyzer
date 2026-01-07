@@ -37,6 +37,8 @@ from app.routers import (
     unemployment_analysis_router,
     year_based_scoring_router
 )
+from app.routers.imports import router as imports_router
+from app.routers.indicators import router as indicators_router
 
 
 @asynccontextmanager
@@ -108,7 +110,10 @@ def create_app() -> FastAPI:
     app.include_router(rata_rata_upah_router, prefix="/api/v1")
     app.include_router(tingkat_pengangguran_terbuka_router, prefix="/api/v1")
     app.include_router(unemployment_analysis_router, prefix="/api/v1")
-    app.include_router(year_based_scoring_router, prefix="/api/v1")
+    
+    # Import router for CSV upload
+    app.include_router(imports_router, prefix="/api")
+    app.include_router(indicators_router, prefix="/api/v1")
 
     return app
 

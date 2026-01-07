@@ -31,6 +31,26 @@ class GiniRatioListResponse(BaseModel):
     page_size: int
 
 
+@router.get(
+    "",
+    response_model=GiniRatioListResponse,
+    summary="List all gini_ratio data",
+)
+async def list_gini_ratio(
+    tahun: int = Query(None, description="Filter by year"),
+    page: int = Query(1, ge=1, description="Page number"),
+    page_size: int = Query(50, ge=1, le=100, description="Page size"),
+) -> GiniRatioListResponse:
+    """Get list of gini_ratio data with optional year filter."""
+    data = await gini_ratio_service.list_all(tahun=tahun, page=page, page_size=page_size)
+    total = await gini_ratio_service.count(tahun=tahun)
+    return GiniRatioListResponse(
+        data=data,
+        total=total,
+        page=page,
+        page_size=page_size,
+    )
+
 @router.post(
     "/import-csv",
     response_model=CSVImportResponse,

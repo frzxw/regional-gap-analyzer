@@ -135,13 +135,35 @@ async def import_batch(
     return result
 
 
-@router.post("/rollback/{source_id}")
-async def rollback_import(source_id: str):
+@router.post("/rollback/{log_id}")
+async def rollback_import(log_id: str):
     """
-    Rollback an import by deleting all indicators from a source.
+    Delete an import log entry. Also optionally deletes imported data.
     """
-    result = await imports_service.rollback_import(source_id)
-    return result
+    from app.db import get_database
+    from bson import ObjectId
+    
+    try:
+        db = await get_database()
+        
+        # Get the import log first
+        import_log = await db["import_logs"].find_one({"_id": ObjectId(log_id)})
+        
+        if not import_log:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Import log not found")
+        
+        # Delete the log entry
+        await db["import_logs"].delete_one({"_id": ObjectId(log_id)})
+        
+        return {
+            "status": "deleted",
+            "log_id": log_id,
+            "message": f"Import log deleted successfully",
+        }
+    except Exception as e:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.get("/history")
@@ -150,13 +172,35 @@ async def get_import_history(
     limit: int = Query(20, ge=1, le=50),
 ):
     """
-    Get history of import operations.
+    Get history of import operations from import_logs collection.
     """
-    from app.repositories import get_sources_repository
-    repo = await get_sources_repository()
-    sources = await repo.find_all(skip=skip, limit=limit)
-
+    from app.db import get_database
+    from datetime import datetime
+    
+    db = await get_database()
+    collection = db["import_logs"]
+    
+    # Get imports sorted by created_at descending
+    cursor = collection.find().sort("created_at", -1).skip(skip).limit(limit)
+    imports = await cursor.to_list(length=limit)
+    
+    # Convert ObjectId to string for JSON serialization
+    result = []
+    for imp in imports:
+        result.append({
+            "_id": str(imp.get("_id", "")),
+            "name": imp.get("name", imp.get("source_name", "Unknown")),
+            "indicator_code": imp.get("indicator_code", ""),
+            "tahun": imp.get("tahun", imp.get("year", 0)),
+            "records_count": imp.get("records_count", 0),
+            "source_type": imp.get("source_type", "file"),
+            "created_at": imp.get("created_at", datetime.utcnow()).isoformat() if imp.get("created_at") else None,
+        })
+    
+    total = await collection.count_documents({})
+    
     return {
-        "imports": sources,
-        "total": len(sources),
+        "imports": result,
+        "total": total,
     }
+
