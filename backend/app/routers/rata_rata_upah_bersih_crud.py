@@ -2,18 +2,20 @@
 Router for rata_rata_upah_bersih CRUD operations.
 """
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Query
 from pydantic import BaseModel
 from typing import List
 
 from app.services.rata_rata_upah_bersih_service import rata_rata_upah_bersih_service
+from app.services.csv_import import RataRataUpahImportService
 from app.models.rata_rata_upah_bersih_model import (
     RataRataUpahBersihCreateRequest,
     RataRataUpahBersihUpdateRequest,
     RataRataUpahBersihResponse,
 )
+from app.models.csv_import import CSVImportResponse
 
-router = APIRouter(prefix="/rata-rata-upah-bersih", tags=["Rata-Rata Upah Bersih"])
+router = APIRouter(prefix="/rata-rata-upah", tags=["Rata-rata Upah Bersih"])
 
 
 class MessageResponse(BaseModel):
@@ -29,71 +31,21 @@ class RataRataUpahBersihListResponse(BaseModel):
     page_size: int
 
 
-@router.get(
-    "",
-    response_model=RataRataUpahBersihListResponse,
-    summary="List all rata_rata_upah_bersih records",
+@router.post(
+    "/import-csv",
+    response_model=CSVImportResponse,
+    summary="Import Rata-rata Upah Bersih from CSV"
 )
-async def list_rata_rata_upah_bersih(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-) -> RataRataUpahBersihListResponse:
-    """Get paginated list of rata_rata_upah_bersih records."""
-    records, total = await rata_rata_upah_bersih_service.get_all(page, page_size)
-
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return RataRataUpahBersihListResponse(
-        data=[RataRataUpahBersihResponse(**r) for r in records],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
-
-
-@router.get(
-    "/province/{province_id}",
-    response_model=List[RataRataUpahBersihResponse],
-    summary="Get rata_rata_upah_bersih by province",
-)
-async def get_rata_rata_upah_bersih_by_province(province_id: str) -> List[RataRataUpahBersihResponse]:
-    """Get all rata_rata_upah_bersih records for a specific province."""
-    records = await rata_rata_upah_bersih_service.get_by_province(province_id)
-
-    if not records:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No data found for province_id '{province_id}'",
-        )
-
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return [RataRataUpahBersihResponse(**r) for r in records]
-
-
-@router.get(
-    "/{province_id}/{tahun}",
-    response_model=RataRataUpahBersihResponse,
-    summary="Get rata_rata_upah_bersih by province and year",
-)
-async def get_rata_rata_upah_bersih(province_id: str, tahun: int) -> RataRataUpahBersihResponse:
-    """Get rata_rata_upah_bersih data for specific province and year."""
-    record = await rata_rata_upah_bersih_service.get_by_province_and_year(province_id, tahun)
-
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Data not found for province_id '{province_id}' and tahun {tahun}",
-        )
-
-    if "_id" in record:
-        record.pop("_id")
-
-    return RataRataUpahBersihResponse(**record)
+async def import_csv(
+    file: UploadFile = File(..., description="CSV file to import"),
+    tahun: int = Query(..., description="Year of the data")
+) -> CSVImportResponse:
+    """Import Rata-rata Upah Bersih data from CSV file (skiprows=4)."""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+    
+    content = await file.read()
+    return await RataRataUpahImportService.import_csv(content, tahun)
 
 
 @router.post(

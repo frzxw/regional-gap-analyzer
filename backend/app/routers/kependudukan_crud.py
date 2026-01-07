@@ -2,16 +2,18 @@
 Router for kependudukan CRUD operations.
 """
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Query
 from pydantic import BaseModel
 from typing import List
 
 from app.services.kependudukan_service import kependudukan_service
+from app.services.csv_import import KependudukanImportService
 from app.models.kependudukan_model import (
     KependudukanCreateRequest,
     KependudukanUpdateRequest,
     KependudukanResponse,
 )
+from app.models.csv_import import CSVImportResponse
 
 router = APIRouter(prefix="/kependudukan", tags=["Kependudukan"])
 
@@ -29,71 +31,21 @@ class KependudukanListResponse(BaseModel):
     page_size: int
 
 
-@router.get(
-    "",
-    response_model=KependudukanListResponse,
-    summary="List all kependudukan records",
+@router.post(
+    "/import-csv",
+    response_model=CSVImportResponse,
+    summary="Import Kependudukan from CSV"
 )
-async def list_kependudukan(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-) -> KependudukanListResponse:
-    """Get paginated list of kependudukan records."""
-    records, total = await kependudukan_service.get_all(page, page_size)
-
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return KependudukanListResponse(
-        data=[KependudukanResponse(**r) for r in records],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
-
-
-@router.get(
-    "/province/{province_id}",
-    response_model=List[KependudukanResponse],
-    summary="Get kependudukan by province",
-)
-async def get_kependudukan_by_province(province_id: str) -> List[KependudukanResponse]:
-    """Get all kependudukan records for a specific province."""
-    records = await kependudukan_service.get_by_province(province_id)
-
-    if not records:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No data found for province_id '{province_id}'",
-        )
-
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return [KependudukanResponse(**r) for r in records]
-
-
-@router.get(
-    "/{province_id}/{tahun}",
-    response_model=KependudukanResponse,
-    summary="Get kependudukan by province and year",
-)
-async def get_kependudukan(province_id: str, tahun: int) -> KependudukanResponse:
-    """Get kependudukan data for specific province and year."""
-    record = await kependudukan_service.get_by_province_and_year(province_id, tahun)
-
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Data not found for province_id '{province_id}' and tahun {tahun}",
-        )
-
-    if "_id" in record:
-        record.pop("_id")
-
-    return KependudukanResponse(**record)
+async def import_csv(
+    file: UploadFile = File(..., description="CSV file to import"),
+    tahun: int = Query(..., description="Year of the data")
+) -> CSVImportResponse:
+    """Import Kependudukan data from CSV file (no skiprows)."""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+    
+    content = await file.read()
+    return await KependudukanImportService.import_csv(content, tahun)
 
 
 @router.post(

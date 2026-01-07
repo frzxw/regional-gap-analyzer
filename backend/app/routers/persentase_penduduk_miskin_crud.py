@@ -2,16 +2,18 @@
 Router for persentase_penduduk_miskin CRUD operations.
 """
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Query
 from pydantic import BaseModel
 from typing import List
 
 from app.services.persentase_penduduk_miskin_service import persentase_penduduk_miskin_service
+from app.services.csv_import import PersentasePendudukMiskinImportService
 from app.models.persentase_penduduk_miskin_model import (
     PersentasePendudukMiskinCreateRequest,
     PersentasePendudukMiskinUpdateRequest,
     PersentasePendudukMiskinResponse,
 )
+from app.models.csv_import import CSVImportResponse
 
 router = APIRouter(prefix="/persentase-penduduk-miskin", tags=["Persentase Penduduk Miskin"])
 
@@ -29,71 +31,21 @@ class PersentasePendudukMiskinListResponse(BaseModel):
     page_size: int
 
 
-@router.get(
-    "",
-    response_model=PersentasePendudukMiskinListResponse,
-    summary="List all persentase_penduduk_miskin records",
+@router.post(
+    "/import-csv",
+    response_model=CSVImportResponse,
+    summary="Import Persentase Penduduk Miskin from CSV"
 )
-async def list_persentase_penduduk_miskin(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-) -> PersentasePendudukMiskinListResponse:
-    """Get paginated list of persentase_penduduk_miskin records."""
-    records, total = await persentase_penduduk_miskin_service.get_all(page, page_size)
-
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return PersentasePendudukMiskinListResponse(
-        data=[PersentasePendudukMiskinResponse(**r) for r in records],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
-
-
-@router.get(
-    "/province/{province_id}",
-    response_model=List[PersentasePendudukMiskinResponse],
-    summary="Get persentase_penduduk_miskin by province",
-)
-async def get_persentase_penduduk_miskin_by_province(province_id: str) -> List[PersentasePendudukMiskinResponse]:
-    """Get all persentase_penduduk_miskin records for a specific province."""
-    records = await persentase_penduduk_miskin_service.get_by_province(province_id)
-
-    if not records:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No data found for province_id '{province_id}'",
-        )
-
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return [PersentasePendudukMiskinResponse(**r) for r in records]
-
-
-@router.get(
-    "/{province_id}/{tahun}",
-    response_model=PersentasePendudukMiskinResponse,
-    summary="Get persentase_penduduk_miskin by province and year",
-)
-async def get_persentase_penduduk_miskin(province_id: str, tahun: int) -> PersentasePendudukMiskinResponse:
-    """Get persentase_penduduk_miskin data for specific province and year."""
-    record = await persentase_penduduk_miskin_service.get_by_province_and_year(province_id, tahun)
-
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Data not found for province_id '{province_id}' and tahun {tahun}",
-        )
-
-    if "_id" in record:
-        record.pop("_id")
-
-    return PersentasePendudukMiskinResponse(**record)
+async def import_csv(
+    file: UploadFile = File(..., description="CSV file to import"),
+    tahun: int = Query(..., description="Year of the data")
+) -> CSVImportResponse:
+    """Import Persentase Penduduk Miskin data from CSV file (skiprows=4)."""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+    
+    content = await file.read()
+    return await PersentasePendudukMiskinImportService.import_csv(content, tahun)
 
 
 @router.post(

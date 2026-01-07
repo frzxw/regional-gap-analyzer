@@ -2,16 +2,18 @@
 Router for pdrb_per_kapita CRUD operations.
 """
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Query
 from pydantic import BaseModel
 from typing import List
 
 from app.services.pdrb_per_kapita_service import pdrb_per_kapita_service
+from app.services.csv_import import PDRBImportService
 from app.models.pdrb_per_kapita_model import (
     PDRBPerKapitaCreateRequest,
     PDRBPerKapitaUpdateRequest,
     PDRBPerKapitaResponse,
 )
+from app.models.csv_import import CSVImportResponse
 
 router = APIRouter(prefix="/pdrb-per-kapita", tags=["PDRB Per Kapita"])
 
@@ -29,71 +31,38 @@ class PDRBPerKapitaListResponse(BaseModel):
     page_size: int
 
 
-@router.get(
-    "",
-    response_model=PDRBPerKapitaListResponse,
-    summary="List all PDRB per kapita records",
+@router.post(
+    "/import-csv-adhb",
+    response_model=CSVImportResponse,
+    summary="Import PDRB Per Kapita ADHB from CSV"
 )
-async def list_pdrb_per_kapita(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-) -> PDRBPerKapitaListResponse:
-    """Get paginated list of pdrb_per_kapita records."""
-    records, total = await pdrb_per_kapita_service.get_all(page, page_size)
-
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return PDRBPerKapitaListResponse(
-        data=[PDRBPerKapitaResponse(**r) for r in records],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
+async def import_csv_adhb(
+    file: UploadFile = File(..., description="CSV file to import"),
+    tahun: int = Query(..., description="Year of the data")
+) -> CSVImportResponse:
+    """Import PDRB Per Kapita ADHB data from CSV file (no skiprows)."""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+    
+    content = await file.read()
+    return await PDRBImportService.import_adhb(content, tahun)
 
 
-@router.get(
-    "/province/{province_id}",
-    response_model=List[PDRBPerKapitaResponse],
-    summary="Get PDRB per kapita by province",
+@router.post(
+    "/import-csv-adhk",
+    response_model=CSVImportResponse,
+    summary="Import PDRB Per Kapita ADHK from CSV"
 )
-async def get_pdrb_per_kapita_by_province(province_id: str) -> List[PDRBPerKapitaResponse]:
-    """Get all pdrb_per_kapita records for a specific province."""
-    records = await pdrb_per_kapita_service.get_by_province(province_id)
-
-    if not records:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No data found for province_id '{province_id}'",
-        )
-
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return [PDRBPerKapitaResponse(**r) for r in records]
-
-
-@router.get(
-    "/{province_id}/{tahun}/{indikator}",
-    response_model=PDRBPerKapitaResponse,
-    summary="Get PDRB per kapita by province, year, and indikator",
-)
-async def get_pdrb_per_kapita(province_id: str, tahun: int, indikator: str) -> PDRBPerKapitaResponse:
-    """Get pdrb_per_kapita data for specific province, year, and indikator."""
-    record = await pdrb_per_kapita_service.get_by_province_year_indikator(province_id, tahun, indikator)
-
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Data not found for province_id '{province_id}', tahun {tahun}, indikator '{indikator}'",
-        )
-
-    if "_id" in record:
-        record.pop("_id")
-
-    return PDRBPerKapitaResponse(**record)
+async def import_csv_adhk(
+    file: UploadFile = File(..., description="CSV file to import"),
+    tahun: int = Query(..., description="Year of the data")
+) -> CSVImportResponse:
+    """Import PDRB Per Kapita ADHK data from CSV file (no skiprows)."""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+    
+    content = await file.read()
+    return await PDRBImportService.import_adhk(content, tahun)
 
 
 @router.post(

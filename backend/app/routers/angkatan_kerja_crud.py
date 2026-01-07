@@ -2,17 +2,19 @@
 Router for angkatan_kerja (Labor Force) CRUD operations.
 """
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, status, UploadFile, File, Query
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
 
 from app.services.angkatan_kerja_service import angkatan_kerja_service
+from app.services.csv_import import AngkatanKerjaImportService
 from app.models.angkatan_kerja import (
     AngkatanKerjaCreateRequest,
     AngkatanKerjaUpdateRequest,
     AngkatanKerjaResponse,
 )
+from app.models.csv_import import CSVImportResponse
 
 router = APIRouter(prefix="/angkatan-kerja", tags=["Angkatan Kerja"])
 
@@ -33,73 +35,21 @@ class AngkatanKerjaListResponse(BaseModel):
 # ===== ENDPOINTS =====
 
 
-@router.get(
-    "",
-    response_model=AngkatanKerjaListResponse,
-    summary="List all angkatan_kerja records",
+@router.post(
+    "/import-csv",
+    response_model=CSVImportResponse,
+    summary="Import Angkatan Kerja from CSV"
 )
-async def list_angkatan_kerja(
-    page: int = Query(1, ge=1),
-    page_size: int = Query(20, ge=1, le=100),
-) -> AngkatanKerjaListResponse:
-    """Get paginated list of angkatan_kerja records."""
-    records, total = await angkatan_kerja_service.get_all(page, page_size)
-
-    # Remove _id from each record
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return AngkatanKerjaListResponse(
-        data=[AngkatanKerjaResponse(**r) for r in records],
-        total=total,
-        page=page,
-        page_size=page_size,
-    )
-
-
-@router.get(
-    "/province/{province_id}",
-    response_model=List[AngkatanKerjaResponse],
-    summary="Get angkatan_kerja by province",
-)
-async def get_angkatan_kerja_by_province(province_id: str) -> List[AngkatanKerjaResponse]:
-    """Get all angkatan_kerja records for a specific province."""
-    records = await angkatan_kerja_service.get_by_province(province_id)
-
-    if not records:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No data found for province_id '{province_id}'",
-        )
-
-    # Remove _id
-    for record in records:
-        if "_id" in record:
-            record.pop("_id")
-
-    return [AngkatanKerjaResponse(**r) for r in records]
-
-
-@router.get(
-    "/{province_id}/{tahun}",
-    response_model=AngkatanKerjaResponse,
-    summary="Get angkatan_kerja by province and year",
-)
-async def get_angkatan_kerja(province_id: str, tahun: int) -> AngkatanKerjaResponse:
-    """Get angkatan_kerja data for specific province and year."""
-    record = await angkatan_kerja_service.get_by_province_and_year(province_id, tahun)
-
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Data not found for province_id '{province_id}' and tahun {tahun}",
-        )
-
-    if "_id" in record:
-        record.pop("_id")
-
-    return AngkatanKerjaResponse(**record)
+async def import_csv(
+    file: UploadFile = File(..., description="CSV file to import"),
+    tahun: int = Query(..., description="Year of the data")
+) -> CSVImportResponse:
+    """Import Angkatan Kerja data from CSV file (skiprows=4)."""
+    if not file.filename.endswith('.csv'):
+        raise HTTPException(status_code=400, detail="File must be a CSV")
+    
+    content = await file.read()
+    return await AngkatanKerjaImportService.import_csv(content, tahun)
 
 
 @router.post(

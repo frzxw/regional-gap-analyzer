@@ -11,7 +11,7 @@ from app.settings import get_settings
 from app.db import close_database
 from app.routers import (
     health_router, 
-    regions_router, 
+    regions_router,
     # CRUD routers (new)
     angkatan_kerja_crud_router,
     gini_ratio_crud_router,
@@ -83,7 +83,7 @@ def create_app() -> FastAPI:
     app.include_router(health_router)
     app.include_router(regions_router, prefix="/api/v1")
     
-    # CRUD routers
+    # CRUD routers (with CSV import endpoints)
     app.include_router(angkatan_kerja_crud_router, prefix="/api/v1")
     app.include_router(gini_ratio_crud_router, prefix="/api/v1")
     app.include_router(ipm_crud_router, prefix="/api/v1")
