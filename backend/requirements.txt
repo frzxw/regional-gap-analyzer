@@ -12,7 +12,8 @@ motor>=3.3.0,<4.0.0
 
 # Data processing
 pandas>=2.1.0,<3.0.0
-numpy>=1.26.0,<2.0.0
+numpy>=1.24.0,<1.27.0  # Pin to stable version for Windows compatibility
+python-multipart
 
 # Utilities
 python-dotenv>=1.0.0,<2.0.0

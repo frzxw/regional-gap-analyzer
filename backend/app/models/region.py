@@ -3,31 +3,48 @@ Pydantic models for regions.
 """
 
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, Any, List
 from datetime import datetime
+
+
+class GeometryModel(BaseModel):
+    """
+    GeoJSON geometry model.
+    """
+    type: str = Field(..., description="Geometry type (Polygon, MultiPolygon, etc.)")
+    coordinates: List[Any] = Field(..., description="Geometry coordinates array")
 
 
 class RegionModel(BaseModel):
     """
-    Region data model representing a province/region.
+    Region data model representing a province (SESUAI FORMAT indonesia-38.json).
+    
+    Structure follows GeoJSON Feature from indonesia-38.json:
+    - id: Unique identifier
+    - KODE_PROV: BPS province code (e.g., "31", "72")
+    - PROVINSI: Province name (e.g., "DKI Jakarta")
+    - geometry: GeoJSON geometry object
+    
+    Note: NO population or area_km2 fields - these are NOT in the official source data.
     """
 
-    code: str = Field(..., description="Unique region code (e.g., 'ID-JK' for Jakarta)")
-    name: str = Field(..., description="Region name")
-    province: str = Field(..., description="Province name")
-    population: Optional[int] = Field(None, description="Population count")
-    area_km2: Optional[float] = Field(None, description="Area in square kilometers")
+    id: str = Field(..., description="ID unik region")
+    KODE_PROV: str = Field(..., description="Kode provinsi BPS")
+    PROVINSI: str = Field(..., description="Nama provinsi")
+    geometry: Optional[GeometryModel] = Field(None, description="GeoJSON geometry object")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
         json_schema_extra = {
             "example": {
-                "code": "ID-JK",
-                "name": "DKI Jakarta",
-                "province": "DKI Jakarta",
-                "population": 10562088,
-                "area_km2": 664.01,
+                "id": "31",
+                "KODE_PROV": "31",
+                "PROVINSI": "DKI Jakarta",
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[106.7, -6.1], [106.9, -6.1], [106.9, -6.3], [106.7, -6.3], [106.7, -6.1]]]
+                }
             }
         }
 

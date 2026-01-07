@@ -1,0 +1,56 @@
+"""
+Base CSV Import Service - Common utilities for all CSV import services.
+"""
+
+import pandas as pd
+import re
+from typing import Optional
+
+from app.db import get_database
+
+
+class BaseCSVImportService:
+    """Base service with shared utilities for CSV import operations."""
+
+    @staticmethod
+    async def find_province(province_name: str) -> Optional[str]:
+        """
+        Find province ID by name with fuzzy matching.
+        Handles common prefixes like PROV., KEP., DI.
+        """
+        clean_name = re.sub(r'^PROV\.?\s+', '', str(province_name), flags=re.IGNORECASE).strip()
+        clean_name = re.sub(r'^KEP\.?\s+', 'KEPULAUAN ', clean_name, flags=re.IGNORECASE)
+        clean_name = re.sub(r'DI\.?\s+', 'DAERAH ISTIMEWA ', clean_name, flags=re.IGNORECASE)
+
+        db = await get_database()
+        collection = db["provinces"]
+        
+        result = await collection.find_one({
+            "properties.PROVINSI": {
+                "$regex": f"^{re.escape(clean_name)}$",
+                "$options": "i"
+            }
+        })
+        
+        if result:
+            return result.get('properties', {}).get('id')
+        return None
+
+    @staticmethod
+    def clean_val(val):
+        """
+        Clean and convert value to float or None.
+        Handles '-', NaN, and '...' as missing values.
+        """
+        if val == '-' or pd.isna(val) or val == '...':
+            return None
+        try:
+            return float(val)
+        except:
+            return None
+
+    @staticmethod
+    def safe_int(val):
+        """Safely convert to int or None."""
+        cleaned = BaseCSVImportService.clean_val(val)
+        return int(cleaned) if cleaned is not None else None

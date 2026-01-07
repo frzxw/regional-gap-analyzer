@@ -13,7 +13,7 @@ from app.models import RegionModel
 class RegionRepository:
     """Repository for region data operations."""
 
-    COLLECTION_NAME = "regions"
+    COLLECTION_NAME = "provinces"
 
     def __init__(self, db: AsyncIOMotorDatabase):
         self.db = db
@@ -38,14 +38,12 @@ class RegionRepository:
         return regions, total
 
     async def find_by_code(self, code: str) -> Optional[dict]:
-        """Find a region by its code."""
-        return await self.collection.find_one({"code": code})
+        """Find a region by its KODE_PROV (BPS province code)."""
+        return await self.collection.find_one({"KODE_PROV": code})
 
     async def find_by_id(self, region_id: str) -> Optional[dict]:
-        """Find a region by its MongoDB _id."""
-        from bson import ObjectId
-
-        return await self.collection.find_one({"_id": ObjectId(region_id)})
+        """Find a region by its id field (not MongoDB _id)."""
+        return await self.collection.find_one({"id": region_id})
 
     async def create(self, region: RegionModel) -> str:
         """
@@ -59,24 +57,26 @@ class RegionRepository:
 
     async def update(self, code: str, update_data: dict) -> bool:
         """
-        Update a region by code.
+        Update a region by KODE_PROV.
+        
+        NOTE: Only PROVINSI field should be updated per business rules.
 
         Returns:
             True if document was modified, False otherwise.
         """
         result = await self.collection.update_one(
-            {"code": code}, {"$set": update_data}
+            {"KODE_PROV": code}, {"$set": update_data}
         )
         return result.modified_count > 0
 
     async def delete(self, code: str) -> bool:
         """
-        Delete a region by code.
+        Delete a region by KODE_PROV.
 
         Returns:
             True if document was deleted, False otherwise.
         """
-        result = await self.collection.delete_one({"code": code})
+        result = await self.collection.delete_one({"KODE_PROV": code})
         return result.deleted_count > 0
 
 

@@ -1,124 +1,125 @@
-"""
-Indicators router - API endpoints for indicator data.
-"""
+from fastapi import APIRouter, HTTPException, Query, Body
+from typing import List, Dict, Optional, Any
+from app.db import get_database
+from datetime import datetime
 
-from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Query
+router = APIRouter()
 
-from app.services import indicators_service
-from app.models import IndicatorRecord, IndicatorCreate, IndicatorDefinition
-from app.common.pagination import PaginatedResponse, PaginationParams
+COLLECTION_MAPPING = {
+    "gini_ratio": "gini_ratio",
+    "ipm": "indeks_pembangunan_manusia",
+    "tpt": "tingkat_pengangguran_terbuka",
+    "kependudukan": "kependudukan",
+    "pdrb_per_kapita": "pdrb_per_kapita",
+    "ihk": "indeks_harga_konsumen",
+    "inflasi_tahunan": "inflasi_tahunan",
+    "persentase_penduduk_miskin": "persentase_penduduk_miskin",
+    "angkatan_kerja": "angkatan_kerja",
+    "rata_rata_upah_bersih": "rata_rata_upah_bersih",
+}
 
-router = APIRouter(prefix="/indicators", tags=["Indicators"])
+from app.common.provinces import PROVINCE_NAMES
 
-
-@router.get("/", response_model=PaginatedResponse)
-async def list_indicators(
-    region_code: Optional[str] = Query(None, description="Filter by region"),
-    indicator_code: Optional[str] = Query(None, description="Filter by indicator type"),
-    year: Optional[int] = Query(None, description="Filter by year"),
+@router.get("/{indicator_code}")
+async def list_indicator_data(
+    indicator_code: str,
+    tahun: Optional[int] = None,
     skip: int = Query(0, ge=0),
     limit: int = Query(50, ge=1, le=100),
 ):
     """
-    List indicator records with optional filters.
+    Generic list endpoint for any indicator.
     """
-    filters = {}
-    if region_code:
-        filters["region_code"] = region_code
-    if indicator_code:
-        filters["indicator_code"] = indicator_code
-    if year:
-        filters["year"] = year
+    collection_name = COLLECTION_MAPPING.get(indicator_code)
+    if not collection_name:
+        raise HTTPException(status_code=404, detail=f"Indicator '{indicator_code}' not found")
 
-    items, total = await indicators_service.list_indicators(
-        filters=filters, skip=skip, limit=limit
-    )
-    return PaginatedResponse(
-        items=items, total=total, skip=skip, limit=limit
-    )
+    db = await get_database()
+    collection = db[collection_name]
 
+    query = {}
+    if tahun:
+        query["tahun"] = tahun
 
-@router.get("/definitions", response_model=List[IndicatorDefinition])
-async def list_indicator_definitions():
-    """
-    Get list of all indicator definitions with metadata.
-    """
-    return await indicators_service.get_definitions()
+    cursor = collection.find(query).skip(skip).limit(limit)
+    items = await cursor.to_list(length=limit)
+    total = await collection.count_documents(query)
 
+    # Convert ObjectId to string and enrich with province name
+    data = []
+    for item in items:
+        item["_id"] = str(item["_id"])
+        
+        # Enrich province name if missing
+        if "province_name" not in item:
+             pid = str(item.get("province_id", ""))
+             item["province_name"] = PROVINCE_NAMES.get(pid, f"Unknown ({pid})")
+             
+        data.append(item)
 
-@router.get("/region/{region_code}")
-async def get_region_indicators(
-    region_code: str,
-    year: Optional[int] = None,
-):
-    """
-    Get all indicators for a specific region.
-    """
-    indicators = await indicators_service.get_region_indicators(region_code, year)
-    if not indicators:
-        raise HTTPException(
-            status_code=404,
-            detail=f"No indicators found for region {region_code}",
-        )
-    return indicators
-
-
-@router.get("/{indicator_code}/history")
-async def get_indicator_history(
-    indicator_code: str,
-    region_code: Optional[str] = None,
-    start_year: int = Query(2010, ge=1990),
-    end_year: int = Query(2024, le=2030),
-):
-    """
-    Get historical time series for an indicator.
-    """
-    history = await indicators_service.get_indicator_history(
-        indicator_code, region_code, start_year, end_year
-    )
     return {
-        "indicator_code": indicator_code,
-        "region_code": region_code,
-        "start_year": start_year,
-        "end_year": end_year,
-        "data": history,
+        "data": data,
+        "total": total,
+        "page": (skip // limit) + 1,
+        "page_size": limit,
     }
 
+@router.put("/{indicator_code}/{province_id}/{tahun}")
+async def update_indicator_data(
+    indicator_code: str,
+    province_id: str,
+    tahun: int,
+    payload: Dict[str, Any] = Body(...),
+):
+    """
+    Generic update endpoint.
+    """
+    collection_name = COLLECTION_MAPPING.get(indicator_code)
+    if not collection_name:
+        raise HTTPException(status_code=404, detail=f"Indicator '{indicator_code}' not found")
 
-@router.post("/", response_model=IndicatorRecord, status_code=201)
-async def create_indicator(indicator: IndicatorCreate):
-    """
-    Create a new indicator record.
-    """
-    result = await indicators_service.create_indicator(indicator.model_dump())
-    return result
+    db = await get_database()
+    collection = db[collection_name]
 
+    # Only allow updating value for now, or other specific fields
+    update_fields = {}
+    if "value" in payload:
+        update_fields["value"] = payload["value"]
+    
+    if not update_fields:
+        raise HTTPException(status_code=400, detail="No valid fields to update")
 
-@router.put("/{indicator_id}")
-async def update_indicator(indicator_id: str, indicator: IndicatorCreate):
-    """
-    Update an existing indicator record.
-    """
-    result = await indicators_service.update_indicator(
-        indicator_id, indicator.model_dump()
+    update_fields["updated_at"] = datetime.utcnow()
+
+    result = await collection.update_one(
+        {"province_id": province_id, "tahun": tahun},
+        {"$set": update_fields}
     )
-    if not result:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Indicator {indicator_id} not found",
-        )
-    return result
 
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Data not found")
 
-@router.delete("/{indicator_id}", status_code=204)
-async def delete_indicator(indicator_id: str):
+    return {"message": "Data updated successfully", "success": True}
+
+@router.delete("/{indicator_code}/{province_id}/{tahun}")
+async def delete_indicator_data(
+    indicator_code: str,
+    province_id: str,
+    tahun: int,
+):
     """
-    Delete an indicator record.
+    Generic delete endpoint.
     """
-    deleted = await indicators_service.delete_indicator(indicator_id)
-    if not deleted:
-        raise HTTPException(
-            status_code=404,
-            detail=f"Indicator {indicator_id} not found",
-        )
+    collection_name = COLLECTION_MAPPING.get(indicator_code)
+    if not collection_name:
+        raise HTTPException(status_code=404, detail=f"Indicator '{indicator_code}' not found")
+
+    db = await get_database()
+    collection = db[collection_name]
+
+    result = await collection.delete_one({"province_id": province_id, "tahun": tahun})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Data not found")
+
+    return {"message": "Data deleted successfully", "success": True}
