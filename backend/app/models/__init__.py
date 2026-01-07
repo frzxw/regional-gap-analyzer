@@ -1,6 +1,6 @@
 """Models module initialization."""
 
-from app.models.region import RegionModel, RegionScoreModel, GeoFeatureModel
+from app.models.region import RegionModel, RegionScoreModel, GeoFeatureModel, GeometryModel
 from app.models.indicator import (
     IndicatorBase,
     IndicatorCreate,
