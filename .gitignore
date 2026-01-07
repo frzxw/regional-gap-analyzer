@@ -12,8 +12,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -105,3 +105,8 @@ data/processed/*.parquet
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/geo/.gitkeep
+
+# =========================
+# Donor folder (NEVER commit)
+# =========================
+v0-indonesia-inequality-dashboard/
