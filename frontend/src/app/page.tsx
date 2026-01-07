@@ -3,6 +3,7 @@ import { ChoroplethMap } from "@/components/dashboard/choropleth-map"
 import { NationalKPIs } from "@/components/dashboard/kpi-cards"
 import { RankingCard } from "@/components/dashboard/ranking-card"
 import { DistributionCard } from "@/components/dashboard/distribution-card"
+import { YearScoreDisplay } from "@/components/scoring/YearScoreDisplay"
 
 export default function Home() {
   return (
@@ -26,6 +27,12 @@ export default function Home() {
             </div>
             <div className="pointer-events-auto hidden w-full max-w-sm shrink-0 md:block">
               <DistributionCard />
+            </div>
+            <div className="pointer-events-auto w-full max-w-md shrink-0">
+              <div className="rounded-lg bg-white/95 backdrop-blur-sm shadow-lg p-4 max-h-[500px] overflow-y-auto">
+                <h2 className="text-lg font-semibold mb-3">Provincial Scores</h2>
+                <YearScoreDisplay showTopBottom={true} topBottomCount={10} />
+              </div>
             </div>
           </div>
         </div>

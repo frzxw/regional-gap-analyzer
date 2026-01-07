@@ -27,6 +27,7 @@ from app.routers.persentase_penduduk_miskin import router as persentase_penduduk
 from app.routers.rata_rata_upah import router as rata_rata_upah_router
 from app.routers.tingkat_pengangguran_terbuka import router as tingkat_pengangguran_terbuka_router
 from app.routers.unemployment_analysis import router as unemployment_analysis_router
+from app.routers.year_based_scoring import router as year_based_scoring_router
 
 __all__ = [
     "health_router", 
@@ -53,5 +54,6 @@ __all__ = [
     "persentase_penduduk_miskin_router", 
     "rata_rata_upah_router", 
     "tingkat_pengangguran_terbuka_router",
-    "unemployment_analysis_router"
+    "unemployment_analysis_router",
+    "year_based_scoring_router"
 ]
