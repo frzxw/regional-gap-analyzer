@@ -21,12 +21,23 @@ class GeometryModel(BaseModel):
     coordinates: List[Any] = Field(..., description="Geometry coordinates array")
 
 
+class PropertiesModel(BaseModel):
+    """Properties object from GeoJSON."""
+    id: Optional[str] = Field(None, description="Province ID (may duplicate top-level id)")
+    KODE_PROV: Optional[str] = Field(None, description="Kode provinsi BPS")
+    PROVINSI: Optional[str] = Field(None, description="Nama provinsi")
+    is_national: Optional[bool] = Field(None, description="Flag for national-level data")
+    
+    class Config:
+        extra = "allow"  # Allow additional fields not defined in the model
+
+
 class RegionBase(BaseModel):
     """Base model for region data (sesuai format indonesia-38.json)."""
 
     id: str = Field(..., description="ID unik region")
-    KODE_PROV: str = Field(..., description="Kode provinsi BPS")
-    PROVINSI: str = Field(..., description="Nama provinsi")
+    type: Optional[str] = Field(None, description="GeoJSON type (Feature)")
+    properties: PropertiesModel = Field(..., description="Properties containing KODE_PROV and PROVINSI")
     geometry: Optional[GeometryModel] = Field(None, description="GeoJSON geometry object")
 
 
@@ -37,8 +48,11 @@ class RegionCreateRequest(RegionBase):
         json_schema_extra = {
             "example": {
                 "id": "31",
-                "KODE_PROV": "31",
-                "PROVINSI": "DKI Jakarta",
+                "type": "Feature",
+                "properties": {
+                    "KODE_PROV": "31",
+                    "PROVINSI": "DKI Jakarta"
+                },
                 "geometry": {
                     "type": "Polygon",
                     "coordinates": [[[106.7, -6.1], [106.9, -6.1], [106.9, -6.3], [106.7, -6.3], [106.7, -6.1]]]
@@ -63,15 +77,18 @@ class RegionUpdateRequest(BaseModel):
 class RegionResponse(RegionBase):
     """Response model for a region."""
 
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = Field(None, description="Creation timestamp")
+    updated_at: Optional[datetime] = Field(None, description="Last update timestamp")
 
     class Config:
         json_schema_extra = {
             "example": {
                 "id": "31",
-                "KODE_PROV": "31",
-                "PROVINSI": "DKI Jakarta",
+                "type": "Feature",
+                "properties": {
+                    "KODE_PROV": "31",
+                    "PROVINSI": "DKI Jakarta"
+                },
                 "geometry": {
                     "type": "Polygon",
                     "coordinates": [[[106.7, -6.1], [106.9, -6.1], [106.9, -6.3], [106.7, -6.3], [106.7, -6.1]]]
