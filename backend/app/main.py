@@ -110,6 +110,7 @@ def create_app() -> FastAPI:
     app.include_router(rata_rata_upah_router, prefix="/api/v1")
     app.include_router(tingkat_pengangguran_terbuka_router, prefix="/api/v1")
     app.include_router(unemployment_analysis_router, prefix="/api/v1")
+    app.include_router(year_based_scoring_router, prefix="/api/v1")
     
     # Import router for CSV upload
     app.include_router(imports_router, prefix="/api")
