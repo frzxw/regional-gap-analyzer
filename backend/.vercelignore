@@ -1,0 +1,43 @@
+# Vercel ignore file
+# Don't upload these to Vercel
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+*.egg-info/
+.pytest_cache/
+
+# Environment
+.env
+.env.local
+
+# Docker
+Dockerfile
+docker-compose.yml
+
+# Tests
+tests/
+pytest.ini
+
+# Development
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Documentation
+README.md
+docs/
+
+# Data (if you have local data)
+data/
+*.csv
+*.json
+*.geojson
