@@ -2,36 +2,22 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import type { AlertSeverity, AlertStatus, AlertFilters } from '@/utils/api';
-import { useAlertsList } from '@/features/alerts/hooks/useAlertsList';
-import { useAlertsSummary } from '@/features/alerts/hooks/useAlerts';
-import { AlertsTable } from '@/features/alerts/components/AlertsTable';
-import { AlertsFilter } from '@/features/alerts/components/AlertsFilter';
-import { AlertSeverityStats } from '@/features/alerts/components/AlertSeverityStats';
+import { useRegionalGapAnalysis } from '@/features/unemployment/hooks/useUnemploymentAnalysis';
+import { SeverityDistribution } from '@/features/unemployment/components/SeverityDistribution';
+import { ProvinceScoreChart } from '@/features/unemployment/components/ProvinceScoreChart';
+import { CriticalAlertsPanel } from '@/features/unemployment/components/CriticalAlertsPanel';
+import { GapIndexCard } from '@/features/unemployment/components/GapIndexCard';
 
 export default function AlertsPage() {
-    const [severity, setSeverity] = useState<AlertSeverity | ''>('');
-    const [status, setStatus] = useState<AlertStatus | ''>('');
-    const [page, setPage] = useState(1);
-    const pageSize = 20;
+    const [selectedYear, setSelectedYear] = useState(2024);
 
-    const filters: AlertFilters = {};
-    if (severity) filters.severity = severity;
-    if (status) filters.status = status;
+    const { data: analysisData, isLoading, isError, refetch } = useRegionalGapAnalysis(selectedYear);
 
-    const { data: alertsData, isLoading: alertsLoading, isError: alertsError, refetch } = useAlertsList(filters, page, pageSize);
-    const { data: summaryData, isLoading: summaryLoading } = useAlertsSummary();
-
-    const handleClearFilters = () => {
-        setSeverity('');
-        setStatus('');
-        setPage(1);
-    };
-
-    const totalPages = alertsData ? Math.ceil(alertsData.total / pageSize) : 1;
+    // Available years
+    const availableYears = [2020, 2021, 2022, 2023, 2024, 2025];
 
     // Error state
-    if (alertsError) {
+    if (isError) {
         return (
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
                 <div className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
@@ -57,10 +43,10 @@ export default function AlertsPage() {
                             />
                         </svg>
                         <h2 className="text-xl font-semibold text-red-800 dark:text-red-200 mb-2">
-                            Gagal Memuat Peringatan
+                            Gagal Memuat Data Analisis
                         </h2>
                         <p className="text-red-600 dark:text-red-300 mb-4">
-                            Terjadi kesalahan saat mengambil data peringatan
+                            Terjadi kesalahan saat mengambil data analisis ketimpangan
                         </p>
                         <button
                             onClick={() => refetch()}
@@ -88,11 +74,27 @@ export default function AlertsPage() {
                                 ← Kembali ke Dashboard
                             </Link>
                             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">
-                                Monitoring Peringatan
+                                Analisis Ketimpangan Pengangguran
                             </h1>
                             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                Pantau peringatan kesenjangan wilayah dan ambil tindakan yang diperlukan
+                                Monitoring dan analisis tingkat pengangguran regional dengan scoring dan alerts
                             </p>
+                        </div>
+
+                        {/* Year Selector */}
+                        <div className="flex items-center gap-3">
+                            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Tahun:
+                            </label>
+                            <select
+                                value={selectedYear}
+                                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                                {availableYears.map(year => (
+                                    <option key={year} value={year}>{year}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -100,93 +102,143 @@ export default function AlertsPage() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
-                {/* Summary Stats */}
-                <section className="mb-8">
-                    <AlertSeverityStats
-                        summary={summaryData}
-                        loading={summaryLoading}
-                    />
-                </section>
-
-                {/* Filters */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4 mb-6">
-                    <AlertsFilter
-                        severity={severity}
-                        status={status}
-                        onSeverityChange={(val) => { setSeverity(val); setPage(1); }}
-                        onStatusChange={(val) => { setStatus(val); setPage(1); }}
-                        onClear={handleClearFilters}
-                    />
-                </section>
-
-                {/* Alerts Table */}
-                <section className="mb-6">
-                    <AlertsTable
-                        alerts={alertsData?.items || []}
-                        loading={alertsLoading}
-                        onAcknowledge={(alertId) => {
-                            console.log('Acknowledge:', alertId);
-                            // TODO: Implement acknowledge mutation
-                        }}
-                        onResolve={(alertId) => {
-                            console.log('Resolve:', alertId);
-                            // TODO: Implement resolve mutation
-                        }}
-                    />
-                </section>
-
-                {/* Pagination */}
-                {totalPages > 1 && (
-                    <section className="flex items-center justify-between bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-4">
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Menampilkan {((page - 1) * pageSize) + 1} - {Math.min(page * pageSize, alertsData?.total || 0)} dari {alertsData?.total || 0} peringatan
-                        </p>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={() => setPage(p => Math.max(1, p - 1))}
-                                disabled={page === 1}
-                                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                ← Sebelumnya
-                            </button>
-                            <span className="text-sm text-gray-600 dark:text-gray-400">
-                                Halaman {page} dari {totalPages}
-                            </span>
-                            <button
-                                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                disabled={page === totalPages}
-                                className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-gray-600 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                            >
-                                Selanjutnya →
-                            </button>
+                {isLoading ? (
+                    <div className="flex items-center justify-center h-96">
+                        <div className="text-center">
+                            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+                            <p className="text-gray-600 dark:text-gray-400">Memuat data analisis...</p>
                         </div>
-                    </section>
-                )}
-
-                {/* Quick Links */}
-                <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6 mt-8">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                        Tautan Cepat
-                    </h3>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-                        Klik pada nama wilayah di tabel untuk melihat detail analisis provinsi tersebut.
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                        <Link
-                            href="/dashboard"
-                            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors text-sm"
-                        >
-                            Dashboard Nasional
-                        </Link>
                     </div>
-                </section>
+                ) : analysisData ? (
+                    <div className="space-y-8">
+                        {/* Summary Cards */}
+                        <section>
+                            <GapIndexCard
+                                gapIndex={analysisData.gap_index}
+                                nationalAverage={analysisData.national_average}
+                                criticalProvinces={analysisData.critical_provinces}
+                                highRiskProvinces={analysisData.high_risk_provinces}
+                            />
+                        </section>
+
+                        {/* Summary Text */}
+                        <section className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4">
+                            <p className="text-sm text-blue-900 dark:text-blue-100">
+                                📊 {analysisData.summary}
+                            </p>
+                        </section>
+
+                        {/* Charts Row */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Severity Distribution */}
+                            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                    Distribusi Tingkat Keparahan
+                                </h2>
+                                <SeverityDistribution provinces={analysisData.provinces} />
+                            </section>
+
+                            {/* Province Rankings */}
+                            <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                    Peringkat Provinsi (Top 15)
+                                </h2>
+                                <ProvinceScoreChart provinces={analysisData.provinces} maxProvinces={15} />
+                            </section>
+                        </div>
+
+                        {/* Critical Alerts */}
+                        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 p-6">
+                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                                Peringatan Kritis & Prioritas Tinggi
+                            </h2>
+                            <CriticalAlertsPanel provinces={analysisData.provinces} />
+                        </section>
+
+                        {/* Detailed Province Table */}
+                        <section className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-700">
+                                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                    Detail Semua Provinsi
+                                </h2>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full">
+                                    <thead className="bg-gray-50 dark:bg-gray-700">
+                                        <tr>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                Peringkat
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                Provinsi
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                Tingkat Pengangguran
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                Score
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                Kategori
+                                            </th>
+                                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                                                Trend
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                        {analysisData.provinces.map((province) => (
+                                            <tr key={province.province_id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                                                    #{province.rank}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                    {province.province_name}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                    {province.unemployment_rate}%
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                    {province.score.score}/100
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className={`px-2 py-1 text-xs font-medium rounded-full ${province.score.severity === 'critical' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400' :
+                                                            province.score.severity === 'high' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400' :
+                                                                province.score.severity === 'medium' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400' :
+                                                                    'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400'
+                                                        }`}>
+                                                        {province.score.category}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                                    {province.trend ? (
+                                                        <span className={`flex items-center gap-1 ${province.trend.direction === 'improving' ? 'text-green-600 dark:text-green-400' :
+                                                                province.trend.direction === 'worsening' ? 'text-red-600 dark:text-red-400' :
+                                                                    'text-gray-600 dark:text-gray-400'
+                                                            }`}>
+                                                            {province.trend.direction === 'improving' ? '↓' :
+                                                                province.trend.direction === 'worsening' ? '↑' : '→'}
+                                                            {Math.abs(province.trend.change_absolute).toFixed(1)}%
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-gray-400">-</span>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </section>
+                    </div>
+                ) : null}
             </main>
 
             {/* Footer */}
             <footer className="bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 mt-12">
                 <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
                     <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-                        Regional Gap Analyzer — Data Demo. Bukan untuk penggunaan resmi.
+                        Regional Gap Analyzer — Analisis Ketimpangan Regional Indonesia
                     </p>
                 </div>
             </footer>
