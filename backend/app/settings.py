@@ -5,14 +5,15 @@ Loads configuration from environment variables.
 
 from functools import lru_cache
 from pydantic_settings import BaseSettings
+from pathlib import Path
 
 
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
-    # MongoDB
-    mongo_uri: str = "mongodb://localhost:27017"
-    mongo_db: str = "regional_gap_analyzer"
+    # MongoDB - dari .env
+    mongo_uri: str = "mongodb+srv://root:testpassword@nosql.i36jyas.mongodb.net/"
+    mongo_db: str = "db_geosantara"
 
     # API
     api_host: str = "0.0.0.0"
@@ -28,9 +29,10 @@ class Settings(BaseSettings):
         return [origin.strip() for origin in self.cors_origins.split(",")]
 
     class Config:
-        env_file = ".env"
+        env_file = str(Path(__file__).parent.parent.parent / ".env")
         env_file_encoding = "utf-8"
         case_sensitive = False
+        extra = "ignore"
 
 
 @lru_cache

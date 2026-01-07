@@ -38,6 +38,18 @@ from app.models.config import (
     ConfigResponse,
     ConfigUpdate,
 )
+from app.models.labor_force import (
+    MonthlyLaborData,
+    LaborForceRecord,
+    LaborForceResponse,
+    LaborForceListResponse,
+)
+from app.models.gini_ratio import (
+    SemesterData,
+    GiniRatioRecord,
+    GiniRatioResponse,
+    GiniRatioListResponse,
+)
 
 __all__ = [
     # Region
@@ -76,4 +88,14 @@ __all__ = [
     "ConfigItem",
     "ConfigResponse",
     "ConfigUpdate",
+    # Labor Force
+    "MonthlyLaborData",
+    "LaborForceRecord",
+    "LaborForceResponse",
+    "LaborForceListResponse",
+    # Gini Ratio
+    "SemesterData",
+    "GiniRatioRecord",
+    "GiniRatioResponse",
+    "GiniRatioListResponse",
 ]

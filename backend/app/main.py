@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.settings import get_settings
 from app.db import close_database
-from app.routers import health_router, regions_router
+from app.routers import health_router, regions_router, angkatan_kerja_router, gini_ratio_router
 
 
 @asynccontextmanager
@@ -56,6 +56,8 @@ def create_app() -> FastAPI:
     # Include routers
     app.include_router(health_router)
     app.include_router(regions_router, prefix="/api/v1")
+    app.include_router(angkatan_kerja_router, prefix="/api/v1")
+    app.include_router(gini_ratio_router, prefix="/api/v1")
 
     return app
 
