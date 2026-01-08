@@ -207,17 +207,17 @@ async def create_region(region_data: RegionCreateRequest) -> MessageResponse:
         409: Region with the same code already exists
     """
     # Check if region already exists
-    existing = await region_service.get_region_by_code(region_data.KODE_PROV)
+    existing = await region_service.get_region_by_code(region_data.properties.KODE_PROV)
     if existing:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
-            detail=f"Region with KODE_PROV '{region_data.KODE_PROV}' already exists",
+            detail=f"Region with KODE_PROV '{region_data.properties.KODE_PROV}' already exists",
         )
 
     # Create the region
     await region_service.create_region(region_data.model_dump())
 
-    return MessageResponse(message=f"Region '{region_data.KODE_PROV}' (PROVINSI: '{region_data.PROVINSI}') created successfully")
+    return MessageResponse(message=f"Region '{region_data.properties.KODE_PROV}' (PROVINSI: '{region_data.properties.PROVINSI}') created successfully")
 
 
 @router.put(
