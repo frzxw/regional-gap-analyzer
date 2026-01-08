@@ -45,7 +45,7 @@ async def import_csv(
         raise HTTPException(status_code=400, detail="File must be a CSV")
     
     content = await file.read()
-    return await TPTImportService.import_csv(content, tahun)
+    return await TPTImportService.import_csv(content, tahun, file.filename)
 
 
 @router.post(

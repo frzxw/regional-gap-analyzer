@@ -65,7 +65,7 @@ async def import_csv(
         raise HTTPException(status_code=400, detail="File must be a CSV")
     
     content = await file.read()
-    return await GiniRatioImportService.import_csv(content, tahun)
+    return await GiniRatioImportService.import_csv(content, tahun, file.filename)
 
 
 @router.post(

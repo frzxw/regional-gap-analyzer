@@ -15,7 +15,7 @@ class GiniRatioImportService(BaseCSVImportService):
     """Service for importing Gini Ratio CSV files."""
 
     @staticmethod
-    async def import_csv(file_content: bytes, tahun: int) -> CSVImportResponse:
+    async def import_csv(file_content: bytes, tahun: int, source_name: str = "unknown.csv") -> CSVImportResponse:
         """
         Import Gini Ratio CSV.
         Columns: Province | Semester 1 (Perkotaan, Perdesaan, Total) | 
@@ -75,6 +75,15 @@ class GiniRatioImportService(BaseCSVImportService):
                     success=False,
                     message=str(e)
                 ))
+
+        # Log import history
+        await GiniRatioImportService.log_import(
+            indicator_code="gini_ratio",
+            year=tahun,
+            source_name=source_name,
+            success_count=success_count,
+            total_rows=len(df)
+        )
         
         return CSVImportResponse(
             indikator="gini_ratio",

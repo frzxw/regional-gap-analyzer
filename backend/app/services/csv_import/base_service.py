@@ -54,3 +54,28 @@ class BaseCSVImportService:
         """Safely convert to int or None."""
         cleaned = BaseCSVImportService.clean_val(val)
         return int(cleaned) if cleaned is not None else None
+
+    @staticmethod
+    async def log_import(
+        indicator_code: str,
+        year: int,
+        source_name: str,
+        success_count: int,
+        total_rows: int,
+        source_type: str = "csv"
+    ):
+        """Record import operation to import_logs collection."""
+        from datetime import datetime
+        db = await get_database()
+        log_collection = db["import_logs"]
+        
+        await log_collection.insert_one({
+            "indicator_code": indicator_code,
+            "name": f"Import {indicator_code} {year}",
+            "source_name": source_name,
+            "tahun": year,
+            "source_type": source_type,
+            "records_count": success_count,
+            "total_rows": total_rows,
+            "created_at": datetime.utcnow()
+        })

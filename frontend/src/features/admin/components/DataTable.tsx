@@ -54,6 +54,25 @@ const INDICATOR_OPTIONS = [
     { value: "rata_rata_upah_bersih", label: "Rata-rata Upah Bersih" },
 ];
 
+// Province ID to Name mapping (fallback when backend doesn't return province_name)
+const PROVINCE_NAMES: Record<string, string> = {
+    "11": "Aceh", "12": "Sumatera Utara", "13": "Sumatera Barat", "14": "Riau",
+    "15": "Jambi", "16": "Sumatera Selatan", "17": "Bengkulu", "18": "Lampung",
+    "19": "Kepulauan Bangka Belitung", "21": "Kepulauan Riau", "31": "DKI Jakarta",
+    "32": "Jawa Barat", "33": "Jawa Tengah", "34": "DI Yogyakarta", "35": "Jawa Timur",
+    "36": "Banten", "51": "Bali", "52": "Nusa Tenggara Barat", "53": "Nusa Tenggara Timur",
+    "61": "Kalimantan Barat", "62": "Kalimantan Tengah", "63": "Kalimantan Selatan",
+    "64": "Kalimantan Timur", "65": "Kalimantan Utara", "71": "Sulawesi Utara",
+    "72": "Sulawesi Tengah", "73": "Sulawesi Selatan", "74": "Sulawesi Tenggara",
+    "75": "Gorontalo", "76": "Sulawesi Barat", "81": "Maluku", "82": "Maluku Utara",
+    "91": "Papua Barat", "94": "Papua", "92": "Papua Barat Daya", "93": "Papua Selatan",
+    "95": "Papua Tengah", "96": "Papua Pegunungan"
+};
+
+function getProvinceName(provinceId: string, provinceName?: string): string {
+    return provinceName || PROVINCE_NAMES[provinceId] || provinceId;
+}
+
 interface DataItem {
     province_id: string;
     tahun: number;
@@ -62,7 +81,7 @@ interface DataItem {
     indicator_code?: string;
     indikator?: string;
     source?: string;
-    
+
     // Gini Ratio structure
     data_semester_1?: {
         perkotaan?: number;
@@ -79,7 +98,7 @@ interface DataItem {
         perdesaan?: number;
         total?: number;
     };
-    
+
     // TPT structure
     data?: {
         februari?: number;
@@ -92,7 +111,7 @@ interface DataItem {
         kepadatan_per_km2?: number;
         rasio_jenis_kelamin?: number;
     } | number; // IPM uses simple number
-    
+
     // Angkatan Kerja structure
     data_februari?: {
         bekerja?: number;
@@ -106,16 +125,16 @@ interface DataItem {
         jumlah_ak?: number;
         persentase_bekerja_ak?: number;
     };
-    
+
     // IHK structure
     data_bulanan?: {
         [key: string]: number | null;
     };
     tahunan?: number;
-    
+
     // PDRB structure
     data_ribu_rp?: number;
-    
+
     // Rata-rata Upah Bersih structure
     sektor?: {
         [key: string]: {
@@ -124,7 +143,7 @@ interface DataItem {
             tahunan?: number;
         };
     };
-    
+
     [key: string]: any; // For other dynamic properties
 }
 
@@ -137,73 +156,83 @@ interface DataTableProps {
  * Render value based on indicator type
  */
 function renderIndicatorValue(item: DataItem, indicatorCode: string): React.ReactNode {
-    // 1. GINI RATIO & PERSENTASE PENDUDUK MISKIN - Semester breakdown
+    // 1. GINI RATIO & PERSENTASE PENDUDUK MISKIN - Semester breakdown OR simple value
     if (indicatorCode === "gini_ratio" || indicatorCode === "persentase_penduduk_miskin") {
         const hasData = item.data_semester_1 || item.data_semester_2 || item.data_tahunan;
-        if (!hasData) return <span className="text-muted-foreground">-</span>;
-        
-        return (
-            <div className="text-xs space-y-1">
-                {item.data_semester_1?.total !== null && item.data_semester_1?.total !== undefined && (
-                    <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">S1:</span>
-                        <span className="font-mono">{item.data_semester_1.total.toFixed(3)}</span>
-                    </div>
-                )}
-                {item.data_semester_2?.total !== null && item.data_semester_2?.total !== undefined && (
-                    <div className="flex justify-between gap-3">
-                        <span className="text-muted-foreground">S2:</span>
-                        <span className="font-mono">{item.data_semester_2.total.toFixed(3)}</span>
-                    </div>
-                )}
-                {item.data_tahunan?.total !== null && item.data_tahunan?.total !== undefined && (
-                    <div className="flex justify-between gap-3 pt-1 border-t">
-                        <span className="font-semibold">Tahunan:</span>
-                        <span className="font-mono font-bold text-primary">{item.data_tahunan.total.toFixed(3)}</span>
-                    </div>
-                )}
-            </div>
-        );
+
+        // If has semester data, show detailed breakdown
+        if (hasData) {
+            return (
+                <div className="text-xs space-y-1">
+                    {item.data_semester_1?.total !== null && item.data_semester_1?.total !== undefined && (
+                        <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">S1:</span>
+                            <span className="font-mono">{item.data_semester_1.total.toFixed(3)}</span>
+                        </div>
+                    )}
+                    {item.data_semester_2?.total !== null && item.data_semester_2?.total !== undefined && (
+                        <div className="flex justify-between gap-3">
+                            <span className="text-muted-foreground">S2:</span>
+                            <span className="font-mono">{item.data_semester_2.total.toFixed(3)}</span>
+                        </div>
+                    )}
+                    {item.data_tahunan?.total !== null && item.data_tahunan?.total !== undefined && (
+                        <div className="flex justify-between gap-3 pt-1 border-t">
+                            <span className="font-semibold">Tahunan:</span>
+                            <span className="font-mono font-bold text-primary">{item.data_tahunan.total.toFixed(3)}</span>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        // Otherwise show simple value (from CSV import)
+        if (item.value !== null && item.value !== undefined) {
+            return <span className="font-mono font-bold text-primary">{item.value.toFixed(3)}</span>;
+        }
+
+        return <span className="text-muted-foreground">-</span>;
     }
-    
+
     // 2. TPT - Februari/Agustus/Tahunan
     if (indicatorCode === "tpt") {
-        if (!item.data) return <span className="text-muted-foreground">-</span>;
-        
+        if (!item.data || typeof item.data === 'number') return <span className="text-muted-foreground">-</span>;
+
+        const data = item.data;
         return (
             <div className="text-xs space-y-1">
-                {item.data.februari !== null && item.data.februari !== undefined && (
+                {data.februari !== null && data.februari !== undefined && (
                     <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">Feb:</span>
-                        <span className="font-mono">{item.data.februari.toFixed(2)}%</span>
+                        <span className="font-mono">{data.februari.toFixed(2)}%</span>
                     </div>
                 )}
-                {item.data.agustus !== null && item.data.agustus !== undefined && (
+                {data.agustus !== null && data.agustus !== undefined && (
                     <div className="flex justify-between gap-3">
                         <span className="text-muted-foreground">Agt:</span>
-                        <span className="font-mono">{item.data.agustus.toFixed(2)}%</span>
+                        <span className="font-mono">{data.agustus.toFixed(2)}%</span>
                     </div>
                 )}
-                {item.data.tahunan !== null && item.data.tahunan !== undefined && (
+                {data.tahunan !== null && data.tahunan !== undefined && (
                     <div className="flex justify-between gap-3 pt-1 border-t">
                         <span className="font-semibold">Tahunan:</span>
-                        <span className="font-mono font-bold text-primary">{item.data.tahunan.toFixed(2)}%</span>
+                        <span className="font-mono font-bold text-primary">{data.tahunan.toFixed(2)}%</span>
                     </div>
                 )}
             </div>
         );
     }
-    
+
     // 3. ANGKATAN KERJA - Februari/Agustus complex data
     if (indicatorCode === "angkatan_kerja") {
         const hasFeb = item.data_februari?.jumlah_ak;
         const hasAgt = item.data_agustus?.jumlah_ak;
-        
+
         if (!hasFeb && !hasAgt) return <span className="text-muted-foreground">-</span>;
-        
+
         return (
             <div className="text-xs space-y-1">
-                {hasFeb && (
+                {hasFeb && item.data_februari && (
                     <div className="space-y-0.5">
                         <div className="font-medium text-muted-foreground">Februari:</div>
                         <div className="flex justify-between gap-2 pl-2">
@@ -216,7 +245,7 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
                         </div>
                     </div>
                 )}
-                {hasAgt && (
+                {hasAgt && item.data_agustus && (
                     <div className="space-y-0.5 pt-1 border-t">
                         <div className="font-medium text-muted-foreground">Agustus:</div>
                         <div className="flex justify-between gap-2 pl-2">
@@ -232,47 +261,48 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
             </div>
         );
     }
-    
+
     // 4. KEPENDUDUKAN - Multiple fields
     if (indicatorCode === "kependudukan") {
-        if (!item.data) return <span className="text-muted-foreground">-</span>;
-        
+        if (!item.data || typeof item.data === 'number') return <span className="text-muted-foreground">-</span>;
+
+        const data = item.data;
         return (
             <div className="text-xs space-y-0.5">
-                {item.data.jumlah_penduduk_ribu && (
+                {data.jumlah_penduduk_ribu && (
                     <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">Penduduk:</span>
-                        <span className="font-mono">{item.data.jumlah_penduduk_ribu.toLocaleString()} rb</span>
+                        <span className="font-mono">{data.jumlah_penduduk_ribu.toLocaleString()} rb</span>
                     </div>
                 )}
-                {item.data.kepadatan_per_km2 && (
+                {data.kepadatan_per_km2 && (
                     <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">Kepadatan:</span>
-                        <span className="font-mono">{item.data.kepadatan_per_km2.toFixed(0)}/km²</span>
+                        <span className="font-mono">{data.kepadatan_per_km2.toFixed(0)}/km²</span>
                     </div>
                 )}
-                {item.data.laju_pertumbuhan_tahunan !== null && item.data.laju_pertumbuhan_tahunan !== undefined && (
+                {data.laju_pertumbuhan_tahunan !== null && data.laju_pertumbuhan_tahunan !== undefined && (
                     <div className="flex justify-between gap-2">
                         <span className="text-muted-foreground">Pertumbuhan:</span>
-                        <span className="font-mono text-primary">{item.data.laju_pertumbuhan_tahunan.toFixed(2)}%</span>
+                        <span className="font-mono text-primary">{data.laju_pertumbuhan_tahunan.toFixed(2)}%</span>
                     </div>
                 )}
             </div>
         );
     }
-    
+
     // 5. IHK - Monthly data with all months
     if (indicatorCode === "ihk") {
         const hasTahunan = item.tahunan !== null && item.tahunan !== undefined;
         const hasBulanan = item.data_bulanan && Object.keys(item.data_bulanan).length > 0;
-        
+
         if (!hasTahunan && !hasBulanan) return <span className="text-muted-foreground">-</span>;
-        
-        const monthOrder = ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 
-                           'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
-        const months = hasBulanan ? 
-            monthOrder.map(m => [m, item.data_bulanan[m]]).filter(([_, val]) => val !== null) : [];
-        
+
+        const monthOrder = ['januari', 'februari', 'maret', 'april', 'mei', 'juni',
+            'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+        const months: Array<[string, number | undefined]> = hasBulanan && item.data_bulanan ?
+            monthOrder.map(m => [m, item.data_bulanan![m]] as [string, number | undefined]).filter(([_, val]) => val !== null && val !== undefined) : [];
+
         return (
             <div className="text-xs space-y-1.5 max-w-[300px]">
                 {hasTahunan ? (
@@ -283,7 +313,7 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
                 ) : (
                     <div className="text-[10px] text-muted-foreground/60 pb-1.5 border-b">Tahunan: null</div>
                 )}
-                
+
                 {hasBulanan && months.length > 0 && (
                     <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                         {months.map(([month, value]) => (
@@ -297,22 +327,22 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
             </div>
         );
     }
-    
+
     // 6. IPM - Simple value
     if (indicatorCode === "ipm") {
         const val = typeof item.data === 'number' ? item.data : item.value;
         if (val === null || val === undefined) return <span className="text-muted-foreground">-</span>;
-        
+
         return <span className="font-mono font-medium text-primary">{val.toFixed(2)}</span>;
     }
-    
+
     // 7. PDRB - ADHB/ADHK with currency format
     if (indicatorCode === "pdrb_per_kapita") {
         if (!item.data_ribu_rp) return <span className="text-muted-foreground">-</span>;
-        
-        const type = item.indikator?.includes('adhb') ? 'ADHB' : 
-                     item.indikator?.includes('adhk') ? 'ADHK 2010' : 'PDRB';
-        
+
+        const type = item.indikator?.includes('adhb') ? 'ADHB' :
+            item.indikator?.includes('adhk') ? 'ADHK 2010' : 'PDRB';
+
         return (
             <div className="text-xs">
                 <div className="flex items-center gap-2 mb-1">
@@ -325,19 +355,19 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
             </div>
         );
     }
-    
+
     // 8. INFLASI TAHUNAN - Monthly inflation data (same as IHK)
     if (indicatorCode === "inflasi_tahunan") {
         const hasTahunan = item.tahunan !== null && item.tahunan !== undefined;
         const hasBulanan = item.data_bulanan && Object.keys(item.data_bulanan).length > 0;
-        
+
         if (!hasTahunan && !hasBulanan) return <span className="text-muted-foreground">-</span>;
-        
-        const monthOrder = ['januari', 'februari', 'maret', 'april', 'mei', 'juni', 
-                           'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
-        const months = hasBulanan ? 
-            monthOrder.map(m => [m, item.data_bulanan[m]]).filter(([_, val]) => val !== null) : [];
-        
+
+        const monthOrder = ['januari', 'februari', 'maret', 'april', 'mei', 'juni',
+            'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+        const months: Array<[string, number | undefined]> = hasBulanan && item.data_bulanan ?
+            monthOrder.map(m => [m, item.data_bulanan![m]] as [string, number | undefined]).filter(([_, val]) => val !== null && val !== undefined) : [];
+
         return (
             <div className="text-xs space-y-1.5 max-w-[300px]">
                 {hasTahunan ? (
@@ -348,7 +378,7 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
                 ) : (
                     <div className="text-[10px] text-muted-foreground/60 pb-1.5 border-b">Tahunan: null</div>
                 )}
-                
+
                 {hasBulanan && months.length > 0 && (
                     <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
                         {months.map(([month, value]) => (
@@ -362,13 +392,12 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
             </div>
         );
     }
-    
+
     // 9. RATA-RATA UPAH BERSIH - Sector-based wage data
     if (indicatorCode === "rata_rata_upah_bersih") {
         if (!item.sektor || Object.keys(item.sektor).length === 0) {
             return <span className="text-muted-foreground">-</span>;
         }
-        
         const formatSectorName = (key: string): string => {
             const mapping: Record<string, string> = {
                 pertanian: "Pertanian",
@@ -412,17 +441,18 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1))
                 .join(' ');
         };
-        
+
+
         return (
             <div className="text-xs space-y-0.5 max-w-[340px]">
                 {Object.entries(item.sektor).map(([sectorKey, sectorData]) => {
                     if (!sectorData) return null;
-                    
+
                     const hasData = sectorData.februari || sectorData.agustus || sectorData.tahunan;
                     if (!hasData) return null;
-                    
+
                     const isTotal = sectorKey === 'total';
-                    
+
                     return (
                         <div key={sectorKey} className={`flex justify-between items-center gap-3 text-[10px] ${isTotal ? "pt-1 mt-0.5 border-t font-semibold" : ""}`}>
                             <div className={`${isTotal ? "font-bold" : "text-muted-foreground"}`}>
@@ -446,7 +476,7 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
             </div>
         );
     }
-    
+
     // DEFAULT: Simple value for other indicators
     return (
         <span className="font-mono">
@@ -464,24 +494,26 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
 
     const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+    const [page, setPage] = useState(1);
+    const limit = 10;
+    const totalPages = Math.ceil(total / limit);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
             const endpoint = getIndicatorEndpoint(indicator);
-            let url = `${API_BASE}/api/v1/${endpoint}`;
-            
+            // Construct URL with pagination
+            let url = `${API_BASE}/api/v1/${endpoint}/?skip=${(page - 1) * limit}&limit=${limit}`;
+
             if (tahun) {
-                url += `/year/${tahun}`;
-            } else {
-                // Add trailing slash and pagination params for root endpoint
-                url += `/?skip=0&limit=100`;
+                url = `${API_BASE}/api/v1/${endpoint}/year/${tahun}?skip=${(page - 1) * limit}&limit=${limit}`;
             }
 
             const response = await fetch(url);
             if (response.ok) {
                 const result = await response.json();
-                console.log('API Response:', result); // Debug
-                console.log('First item:', result.data?.[0]); // Debug
+                console.log('API Response:', result);
+                console.log('First item:', result.data?.[0]);
                 setData(result.data || []);
                 setTotal(result.total || 0);
             } else {
@@ -494,7 +526,11 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
         } finally {
             setLoading(false);
         }
-    }, [API_BASE, indicator, tahun]);
+    }, [API_BASE, indicator, tahun, page]);
+
+    useEffect(() => {
+        setPage(1); // Reset to page 1 when filter changes
+    }, [indicator, tahun]);
 
     useEffect(() => {
         fetchData();
@@ -509,7 +545,9 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
             const endpoint = getIndicatorEndpoint(indicator);
             const response = await fetch(
                 `${API_BASE}/api/v1/${endpoint}/${item.province_id}/${item.tahun}`,
-                { method: "DELETE" }
+                {
+                    method: "DELETE",
+                }
             );
 
             if (response.ok) {
@@ -557,26 +595,28 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Semua Tahun</SelectItem>
-                            {Array.from({ length: 6 }, (_, i) => 2020 + i).map((year) => (
-                                <SelectItem key={year} value={year.toString()}>
-                                    {year}
-                                </SelectItem>
-                            ))}
+                            {/* Generate years dynamically if needed, static for now */}
+                            <SelectItem value="2020">2020</SelectItem>
+                            <SelectItem value="2021">2021</SelectItem>
+                            <SelectItem value="2022">2022</SelectItem>
+                            <SelectItem value="2023">2023</SelectItem>
+                            <SelectItem value="2024">2024</SelectItem>
+                            <SelectItem value="2025">2025</SelectItem>
                         </SelectContent>
                     </Select>
 
                     <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={fetchData}
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => fetchData()}
                         disabled={loading}
+                        title="Refresh Data"
                     >
                         {loading ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
                         ) : (
                             <RefreshCw className="w-4 h-4" />
                         )}
-                        <span className="ml-1">Refresh</span>
                     </Button>
 
                     <Badge variant="secondary" className="ml-auto">
@@ -585,7 +625,7 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
                 </div>
 
                 {/* Table */}
-                {loading ? (
+                {loading && data.length === 0 ? (
                     <div className="flex items-center justify-center py-12 text-muted-foreground">
                         <Loader2 className="w-6 h-6 animate-spin mr-2" />
                         Loading...
@@ -621,13 +661,13 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {data.slice(0, 20).map((item, idx) => (
+                                {data.map((item, idx) => (
                                     <TableRow key={`${item.province_id}-${item.tahun}-${idx}`}>
                                         <TableCell className="font-medium">
                                             {item.province_id}
                                         </TableCell>
                                         <TableCell>
-                                            {item.province_name || "-"}
+                                            {getProvinceName(item.province_id, item.province_name)}
                                         </TableCell>
                                         <TableCell>{item.tahun}</TableCell>
                                         <TableCell className="text-right">
@@ -663,11 +703,31 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
                                 ))}
                             </TableBody>
                         </Table>
-                        {data.length > 20 && (
-                            <div className="p-3 text-center text-sm text-muted-foreground border-t">
-                                Menampilkan 20 dari {data.length} records
+
+                        {/* Pagination Controls */}
+                        <div className="flex items-center justify-between p-4 border-t bg-muted/20">
+                            <div className="text-sm text-muted-foreground">
+                                Showing {data.length > 0 ? (page - 1) * limit + 1 : 0} to {Math.min(page * limit, total)} of {total} records
                             </div>
-                        )}
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                                    disabled={page === 1 || loading}
+                                >
+                                    Previous
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                                    disabled={page >= totalPages || loading}
+                                >
+                                    Next
+                                </Button>
+                            </div>
+                        </div>
                     </div>
                 )}
             </CardContent>
