@@ -118,27 +118,68 @@ export interface ValidationResult {
 }
 
 /**
- * Imports API calls for CSV/Excel/JSON file uploads.
+ * CSV Import Response (per-indicator endpoint)
+ */
+export interface CSVImportResponse {
+  indikator: string;
+  tahun: number;
+  total_rows: number;
+  success_count: number;
+  failed_count: number;
+  failed_rows: Array<{
+    province_name: string;
+    success: boolean;
+    message: string;
+  }>;
+  message: string;
+}
+
+/**
+ * Mapping dari indicator code ke endpoint path
+ */
+const INDICATOR_ENDPOINT_MAP: Record<string, string> = {
+  gini_ratio: "gini-ratio",
+  ipm: "indeks-pembangunan-manusia",
+  tpt: "tingkat-pengangguran-terbuka",
+  kependudukan: "kependudukan",
+  pdrb_per_kapita: "pdrb-per-kapita",
+  ihk: "indeks-harga-konsumen",
+  inflasi_tahunan: "inflasi-tahunan",
+  persentase_penduduk_miskin: "persentase-penduduk-miskin",
+  angkatan_kerja: "angkatan-kerja",
+  rata_rata_upah_bersih: "rata-rata-upah",
+};
+
+/**
+ * Imports API calls for CSV file uploads (using per-indicator endpoints).
  */
 export const importsApi = {
   /**
-   * Upload and import a file.
+   * Upload and import a CSV file using indicator-specific endpoint.
+   * Uses /api/v1/{indicator}/import-csv endpoints.
    */
   uploadFile: async (
     file: File,
     indicatorCode: string,
     year: number,
     sourceName?: string
-  ): Promise<ImportResult> => {
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("indicator_code", indicatorCode);
-    formData.append("year", year.toString());
-    if (sourceName) {
-      formData.append("source_name", sourceName);
+  ): Promise<CSVImportResponse> => {
+    // Validasi file type
+    if (!file.name.endsWith('.csv')) {
+      throw new Error('File harus berformat CSV');
     }
 
-    const url = `${BACKEND_URL}/api/imports/file`;
+    // Map indicator code ke endpoint path
+    const endpointPath = INDICATOR_ENDPOINT_MAP[indicatorCode];
+    if (!endpointPath) {
+      throw new Error(`Unknown indicator code: ${indicatorCode}`);
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    // Tahun sebagai query parameter
+    const url = `${BACKEND_URL}/api/v1/${endpointPath}/import-csv?tahun=${year}`;
     const response = await fetch(url, {
       method: "POST",
       body: formData,

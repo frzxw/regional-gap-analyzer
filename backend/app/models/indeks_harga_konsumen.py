@@ -2,27 +2,9 @@
 Indeks Harga Konsumen (Consumer Price Index) models for API request/response.
 """
 
-from typing import Optional, Any
+from typing import Optional, Any, Dict
 from pydantic import BaseModel, Field, field_validator
 from bson import ObjectId
-
-
-class MonthlyIndexData(BaseModel):
-    """Monthly consumer price index data."""
-    
-    januari: Optional[float] = Field(None, description="January index")
-    februari: Optional[float] = Field(None, description="February index")
-    maret: Optional[float] = Field(None, description="March index")
-    april: Optional[float] = Field(None, description="April index")
-    mei: Optional[float] = Field(None, description="May index")
-    juni: Optional[float] = Field(None, description="June index")
-    juli: Optional[float] = Field(None, description="July index")
-    agustus: Optional[float] = Field(None, description="August index")
-    september: Optional[float] = Field(None, description="September index")
-    oktober: Optional[float] = Field(None, description="October index")
-    november: Optional[float] = Field(None, description="November index")
-    desember: Optional[float] = Field(None, description="December index")
-    tahunan: Optional[float] = Field(None, description="Annual index")
 
 
 class IndeksHargaKonsumenRecord(BaseModel):
@@ -33,7 +15,9 @@ class IndeksHargaKonsumenRecord(BaseModel):
     province_name: Optional[str] = Field(None, description="Province name")
     tahun: int = Field(..., description="Year of data")
     indikator: str = Field(..., description="Indicator type: ihk_indeks_harga_konsumen")
-    data_bulanan: Optional[MonthlyIndexData] = None
+    data_bulanan: Dict[str, Optional[float]] = Field(default_factory=dict, description="Monthly data (januari-desember)")
+    tahunan: Optional[float] = Field(None, description="Annual index")
+    source: Optional[str] = Field(None, description="Data source")
 
     @field_validator("id", mode="before")
     @classmethod

@@ -120,7 +120,6 @@ export function ImportForm({
                         <p className="font-medium text-green-500">Import Berhasil!</p>
                         <p className="text-sm text-muted-foreground mt-1">
                             {result.records_imported} dari {result.records_processed} record berhasil diimport.
-                            Durasi: {result.duration_seconds.toFixed(2)}s
                         </p>
                     </div>
                 </div>

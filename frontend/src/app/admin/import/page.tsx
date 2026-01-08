@@ -33,8 +33,25 @@ export default function AdminImportPage() {
     const handleSave = async (data: any) => {
         try {
             const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+            
+            // Map indicator code to endpoint
+            const indicatorCode = data.indikator || data.indicator_code || "gini_ratio";
+            const mapping: Record<string, string> = {
+                gini_ratio: "gini-ratio",
+                ipm: "indeks-pembangunan-manusia",
+                tpt: "tingkat-pengangguran-terbuka",
+                kependudukan: "kependudukan",
+                pdrb_per_kapita: "pdrb-per-kapita",
+                ihk: "indeks-harga-konsumen",
+                inflasi_tahunan: "inflasi-tahunan",
+                persentase_penduduk_miskin: "persentase-penduduk-miskin",
+                angkatan_kerja: "angkatan-kerja",
+                rata_rata_upah_bersih: "rata-rata-upah",
+            };
+            const endpoint = mapping[indicatorCode] || indicatorCode;
+            
             const response = await fetch(
-                `${API_BASE}/api/v1/${data.indikator || data.indicator_code || "gini_ratio"}/${data.province_id}/${data.tahun}`,
+                `${API_BASE}/api/v1/${endpoint}/${data.province_id}/${data.tahun}`,
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -133,10 +150,15 @@ export default function AdminImportPage() {
                             <CardContent className="text-sm text-muted-foreground space-y-3">
                                 <p><strong>Format CSV yang didukung:</strong></p>
                                 <ul className="list-disc list-inside space-y-1 ml-2">
-                                    <li>Format BPS standard dengan header multi-row didukung otomatis</li>
-                                    <li>Atau format sederhana: Kolom1=Provinsi, Kolom2=Nilai</li>
+                                    <li>Hanya file CSV (format BPS standard)</li>
+                                    <li>Setiap indikator memiliki struktur kolom spesifik</li>
+                                    <li>Header rows akan diproses otomatis sesuai indikator</li>
                                     <li>Nilai "-" atau "..." dianggap null</li>
+                                    <li>Nama provinsi dengan prefix (PROV., KEP., DI.) didukung</li>
                                 </ul>
+                                <p className="text-xs text-muted-foreground/70 mt-2">
+                                    💡 Import menggunakan endpoint spesifik per indikator untuk akurasi maksimal
+                                </p>
                             </CardContent>
                         </Card>
                     </TabsContent>
