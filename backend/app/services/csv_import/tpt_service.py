@@ -15,7 +15,7 @@ class TPTImportService(BaseCSVImportService):
     """Service for importing Tingkat Pengangguran Terbuka CSV files."""
 
     @staticmethod
-    async def import_csv(file_content: bytes, tahun: int) -> CSVImportResponse:
+    async def import_csv(file_content: bytes, tahun: int, source_name: str = "unknown.csv") -> CSVImportResponse:
         """
         Import Tingkat Pengangguran Terbuka CSV.
         Columns: Province | Februari | Agustus | Tahunan
@@ -64,6 +64,15 @@ class TPTImportService(BaseCSVImportService):
                     success=False,
                     message=str(e)
                 ))
+
+        # Log import history
+        await TPTImportService.log_import(
+            indicator_code="tingkat_pengangguran_terbuka",
+            year=tahun,
+            source_name=source_name,
+            success_count=success_count,
+            total_rows=len(df)
+        )
         
         return CSVImportResponse(
             indikator="tingkat_pengangguran_terbuka",

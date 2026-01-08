@@ -41,7 +41,7 @@ export default function AdminImportPage() {
                 ipm: "indeks-pembangunan-manusia",
                 tpt: "tingkat-pengangguran-terbuka",
                 kependudukan: "kependudukan",
-                pdrb_per_kapita: "pdrb-per-kapita",
+                pdrb_per_kapita: "pdrb-perkapita",
                 ihk: "indeks-harga-konsumen",
                 inflasi_tahunan: "inflasi-tahunan",
                 persentase_penduduk_miskin: "persentase-penduduk-miskin",
@@ -50,12 +50,35 @@ export default function AdminImportPage() {
             };
             const endpoint = mapping[indicatorCode] || indicatorCode;
 
+            // Build payload based on indicator type
+            let payload: any = {};
+
+            if (indicatorCode === "gini_ratio" || indicatorCode === "persentase_penduduk_miskin") {
+                payload = {
+                    data_semester_1: data.data_semester_1,
+                    data_semester_2: data.data_semester_2,
+                    data_tahunan: data.data_tahunan,
+                };
+            } else if (indicatorCode === "tpt" || indicatorCode === "kependudukan") {
+                payload = { data: data.data };
+            } else if (indicatorCode === "angkatan_kerja") {
+                payload = {
+                    data_februari: data.data_februari,
+                    data_agustus: data.data_agustus,
+                };
+            } else if (indicatorCode === "ipm") {
+                payload = { data: data.data };
+            } else {
+                // Default: simple value
+                payload = { value: data.value };
+            }
+
             const response = await fetch(
                 `${API_BASE}/api/v1/${endpoint}/${data.province_id}/${data.tahun}`,
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ value: data.value }),
+                    body: JSON.stringify(payload),
                 }
             );
 
