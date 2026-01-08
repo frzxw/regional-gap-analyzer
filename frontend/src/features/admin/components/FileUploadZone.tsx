@@ -108,7 +108,7 @@ export function FileUploadZone({
                             {isDragging ? "Drop file here..." : "Drag & drop file or click to browse"}
                         </p>
                         <p className="text-sm text-muted-foreground mt-1">
-                            Supported: CSV, Excel (.xlsx, .xls), JSON
+                            Supported: CSV
                         </p>
                     </div>
                 </div>
