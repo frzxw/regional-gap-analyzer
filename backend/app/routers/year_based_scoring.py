@@ -58,6 +58,23 @@ class YearsResponse(BaseModel):
     count: int
 
 
+class ProvinceInfo(BaseModel):
+    """Basic province information."""
+    province_id: str
+    province_name: str
+    score: float
+
+
+class NationalStatistics(BaseModel):
+    """National statistics for a year."""
+    year: int
+    median_score: float
+    leader: Optional[ProvinceInfo] = None
+    critical: Optional[ProvinceInfo] = None
+    total_population: int
+    provinces_count: int
+
+
 @router.get(
     "/available-years",
     response_model=YearsResponse,
@@ -72,6 +89,34 @@ async def get_available_years():
     """
     years = await year_based_scoring_service.get_available_years()
     return YearsResponse(years=years, count=len(years))
+
+
+@router.get(
+    "/{year}/statistics",
+    response_model=NationalStatistics,
+    summary="Get national statistics for a year"
+)
+async def get_national_statistics(
+    year: int = Path(..., description="Year to get statistics for", ge=2000, le=2100)
+):
+    """
+    Get national statistics including median score, leader, critical province, and population.
+    
+    Args:
+        year: Year to calculate statistics for
+        
+    Returns:
+        National statistics for the year
+    """
+    stats = await year_based_scoring_service.get_national_statistics(year)
+    
+    if not stats:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No data found for year {year}"
+        )
+    
+    return stats
 
 
 @router.get("/_test/{year}")

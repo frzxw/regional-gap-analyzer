@@ -7,12 +7,6 @@ from pydantic import BaseModel, Field, field_validator
 from bson import ObjectId
 
 
-class PdrbPerkapitaData(BaseModel):
-    """PDRB per capita data."""
-    
-    data_ribu_rp: Optional[float] = Field(None, description="GDP per capita in thousands of Rupiah")
-
-
 class PdrbPerkapitaRecord(BaseModel):
     """Complete PDRB per capita record for a year and province."""
     
@@ -20,8 +14,9 @@ class PdrbPerkapitaRecord(BaseModel):
     province_id: str = Field(..., description="Province code")
     province_name: Optional[str] = Field(None, description="Province name")
     tahun: int = Field(..., description="Year of data")
-    indikator: str = Field(..., description="Indicator type: pdrb_per_kapita_adhb")
-    data: Optional[PdrbPerkapitaData] = None
+    indikator: str = Field(..., description="Indicator type: pdrb_per_kapita_adhb or pdrb_per_kapita_adhk")
+    data_ribu_rp: Optional[float] = Field(None, description="GDP per capita in thousands of Rupiah")
+    source: Optional[str] = Field(None, description="Data source")
 
     @field_validator("id", mode="before")
     @classmethod

@@ -38,12 +38,25 @@ class RegionService:
         Create a new region.
 
         Args:
-            region_data: Region data dictionary
+            region_data: Region data dictionary (GeoJSON Feature format with nested properties)
 
         Returns:
             Created region ID
         """
-        region = RegionModel(**region_data)
+        # Extract properties from GeoJSON structure if present
+        if "properties" in region_data:
+            properties = region_data.get("properties", {})
+            flattened_data = {
+                "id": region_data.get("id"),
+                "KODE_PROV": properties.get("KODE_PROV"),
+                "PROVINSI": properties.get("PROVINSI"),
+                "geometry": region_data.get("geometry"),
+            }
+            region = RegionModel(**flattened_data)
+        else:
+            # Backward compatibility: flat structure
+            region = RegionModel(**region_data)
+        
         repo = await get_region_repository()
         return await repo.create(region)
 

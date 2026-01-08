@@ -12,7 +12,7 @@ interface FileUploadZoneProps {
 export function FileUploadZone({
     onFileSelect,
     disabled = false,
-    acceptedTypes = [".csv", ".xlsx", ".xls", ".json"],
+    acceptedTypes = [".csv"], // Only CSV for indicator-specific imports
 }: FileUploadZoneProps) {
     const [isDragging, setIsDragging] = useState(false);
     const [selectedFile, setSelectedFile] = useState<File | null>(null);

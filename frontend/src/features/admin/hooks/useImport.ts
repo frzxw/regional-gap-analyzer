@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { importsApi, ImportResult, ImportHistoryItem } from "@/lib/api";
+import { importsApi, ImportResult, ImportHistoryItem, CSVImportResponse } from "@/lib/api";
 
 export type UploadStatus = "idle" | "uploading" | "success" | "error";
 
@@ -20,6 +20,19 @@ interface UseImportReturn {
     reset: () => void;
 }
 
+/**
+ * Convert CSVImportResponse to ImportResult for UI compatibility
+ */
+function convertToImportResult(csvResponse: CSVImportResponse): ImportResult {
+    return {
+        success: csvResponse.success_count > 0,
+        message: csvResponse.message,
+        records_processed: csvResponse.total_rows,
+        records_imported: csvResponse.success_count,
+        duration_seconds: 0, // Not available from CSV import endpoint
+    };
+}
+
 export function useImport(): UseImportReturn {
     const [status, setStatus] = useState<UploadStatus>("idle");
     const [error, setError] = useState<string | null>(null);
@@ -35,7 +48,8 @@ export function useImport(): UseImportReturn {
 
             try {
                 const response = await importsApi.uploadFile(file, indicatorCode, year);
-                setResult(response);
+                const convertedResult = convertToImportResult(response);
+                setResult(convertedResult);
                 setStatus("success");
             } catch (err) {
                 setError(err instanceof Error ? err.message : "Upload failed");
