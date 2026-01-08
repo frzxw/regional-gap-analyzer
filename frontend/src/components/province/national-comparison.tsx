@@ -1,40 +1,59 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useState } from "react"
 import { useAppStore } from "@/lib/store"
-import { INDICATORS } from "@/lib/constants"
-import { generateMockData, normalizeValue } from "@/lib/scoring-engine"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer } from "recharts"
+import { provinceApi, type ScoreBreakdown, type ProvinceScoreDetailed } from "@/utils/provinceApi"
 
 export function NationalComparison({ id }: { id: string }) {
-  const { selectedYear, normalizationOverrides } = useAppStore()
-  const allData = useMemo(() => generateMockData(), [])
-  const yearData = allData.filter((d) => d.year === selectedYear)
-  const currentData = yearData.find((d) => d.provinceId === id)
+  const { selectedYear } = useAppStore()
+  const [provinceData, setProvinceData] = useState<ScoreBreakdown | null>(null)
+  const [allProvinces, setAllProvinces] = useState<ProvinceScoreDetailed[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const chartData = useMemo(() => {
-    if (!currentData) return []
-
-    // Take top 6 indicators for radar clarity
-    const selectedInds = INDICATORS.slice(0, 6)
-
-    return selectedInds.map((ind) => {
-      const normType = normalizationOverrides[ind.id] || ind.defaultNormalization
-      const val = normalizeValue(currentData.metrics[ind.id], normType, currentData.population, currentData.area)
-
-      const values = yearData.map((d) => normalizeValue(d.metrics[ind.id], normType, d.population, d.area))
-      const avg = values.reduce((a, b) => a + b, 0) / values.length
-
-      // Normalize for radar (0-100 scale)
-      const max = Math.max(...values)
-      return {
-        subject: ind.name,
-        province: (val / max) * 100,
-        national: (avg / max) * 100,
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const [breakdown, allScores] = await Promise.all([
+          provinceApi.getScoreBreakdown(id, selectedYear),
+          provinceApi.getScoresForYear(selectedYear)
+        ])
+        setProvinceData(breakdown)
+        setAllProvinces(allScores)
+      } catch (err) {
+        console.error("Failed to fetch comparison data:", err)
+        setError(err instanceof Error ? err.message : "Failed to load data")
+        setProvinceData(null)
+        setAllProvinces([])
+      } finally {
+        setLoading(false)
       }
-    })
-  }, [currentData, yearData, normalizationOverrides])
+    }
+    fetchData()
+  }, [id, selectedYear])
+
+  const chartData = provinceData?.collections
+    .slice(0, 6) // Take top 6 for radar clarity
+    .map((collection) => {
+      // Calculate national average for this collection
+      const allScores = allProvinces
+        .map(p => p.collection_scores[collection.collection]?.score || 0)
+        .filter(s => s > 0)
+
+      const nationalAvg = allScores.length > 0
+        ? allScores.reduce((a, b) => a + b, 0) / allScores.length
+        : 0
+
+      return {
+        subject: collection.display_name,
+        province: collection.score,
+        national: nationalAvg,
+      }
+    }) || []
 
   return (
     <Card className="border-none bg-white shadow-[0_4px_20px_rgba(0,0,0,0.03)] rounded-2xl overflow-hidden p-6">
@@ -44,31 +63,42 @@ export function NationalComparison({ id }: { id: string }) {
         </CardTitle>
       </CardHeader>
       <CardContent className="h-[300px] p-0">
-        <ResponsiveContainer width="100%" height="100%">
-          <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
-            <PolarGrid stroke="#E5E7EB" />
-            <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8, fontWeight: 600, fill: "#666" }} />
-            <PolarRadiusAxis angle={30} domain={[0, 100]} hide />
-            <Radar
-              name="Province"
-              dataKey="province"
-              stroke="#1A1A1A"
-              fill="#1A1A1A"
-              fillOpacity={0.15}
-              strokeWidth={2}
-            />
-            <Radar
-              name="National Average"
-              dataKey="national"
-              stroke="#3b82f6"
-              fill="#3b82f6"
-              fillOpacity={0.3}
-              strokeWidth={2}
-              strokeDasharray="4 4"
-            />
-          </RadarChart>
-        </ResponsiveContainer>
+        {loading ? (
+          <div className="flex items-center justify-center h-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        ) : error || chartData.length === 0 ? (
+          <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+            {error ? "Failed to load data" : "No data available"}
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height="100%">
+            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={chartData}>
+              <PolarGrid stroke="#E5E7EB" />
+              <PolarAngleAxis dataKey="subject" tick={{ fontSize: 8, fontWeight: 600, fill: "#666" }} />
+              <PolarRadiusAxis angle={30} domain={[0, 100]} hide />
+              <Radar
+                name="Province"
+                dataKey="province"
+                stroke="#1A1A1A"
+                fill="#1A1A1A"
+                fillOpacity={0.15}
+                strokeWidth={2}
+              />
+              <Radar
+                name="National Average"
+                dataKey="national"
+                stroke="#3b82f6"
+                fill="#3b82f6"
+                fillOpacity={0.3}
+                strokeWidth={2}
+                strokeDasharray="4 4"
+              />
+            </RadarChart>
+          </ResponsiveContainer>
+        )}
       </CardContent>
     </Card>
   )
 }
+
