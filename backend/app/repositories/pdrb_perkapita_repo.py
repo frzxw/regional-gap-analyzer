@@ -29,7 +29,7 @@ class PdrbPerkapitaRepository:
         Returns:
             Tuple of (records list, total count)
         """
-        collection = self.db["pdrb_perkapita"]
+        collection = self.db["pdrb_per_kapita"]
         query = {}
 
         if "province_id" in filters and filters["province_id"]:
@@ -54,7 +54,7 @@ class PdrbPerkapitaRepository:
         Returns:
             Tuple of (records list, total count)
         """
-        collection = self.db["pdrb_perkapita"]
+        collection = self.db["pdrb_per_kapita"]
         query = {"province_id": province_id}
 
         records = await collection.find(query).skip(skip).limit(limit).to_list(None)
@@ -73,7 +73,7 @@ class PdrbPerkapitaRepository:
         Returns:
             Tuple of (records list, total count)
         """
-        collection = self.db["pdrb_perkapita"]
+        collection = self.db["pdrb_per_kapita"]
         query = {"tahun": year}
 
         records = await collection.find(query).skip(skip).limit(limit).to_list(None)

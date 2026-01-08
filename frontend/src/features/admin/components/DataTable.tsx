@@ -391,7 +391,7 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
         };
         
         return (
-            <div className="text-xs space-y-1 max-w-[400px]">
+            <div className="text-xs space-y-0.5 max-w-[280px]">
                 {Object.entries(item.sektor).map(([sectorKey, sectorData]) => {
                     if (!sectorData) return null;
                     
@@ -401,30 +401,20 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
                     const isTotal = sectorKey === 'total';
                     
                     return (
-                        <div key={sectorKey} className={isTotal ? "pt-1.5 border-t" : ""}>
-                            <div className={`text-[10px] mb-0.5 ${isTotal ? "font-bold" : "text-muted-foreground"}`}>
-                                {sectorNames[sectorKey] || sectorKey}
+                        <div key={sectorKey} className={`flex items-start gap-2 text-[10px] ${isTotal ? "pt-1 mt-0.5 border-t font-semibold" : ""}`}>
+                            <div className={`min-w-[85px] text-right ${isTotal ? "font-bold" : "text-muted-foreground"}`}>
+                                {sectorNames[sectorKey] || sectorKey}:
                             </div>
-                            <div className="grid grid-cols-3 gap-2 text-[11px]">
-                                {sectorData.februari !== null && sectorData.februari !== undefined && (
-                                    <div>
-                                        <span className="text-muted-foreground">Feb: </span>
-                                        <span className="font-mono">Rp{(sectorData.februari / 1000).toFixed(0)}K</span>
-                                    </div>
+                            <div className="flex gap-2 font-mono">
+                                {sectorData.februari && (
+                                    <span className={isTotal ? "text-primary" : ""}>
+                                        {(sectorData.februari / 1000).toFixed(0)}K
+                                    </span>
                                 )}
-                                {sectorData.agustus !== null && sectorData.agustus !== undefined && (
-                                    <div>
-                                        <span className="text-muted-foreground">Agt: </span>
-                                        <span className="font-mono">Rp{(sectorData.agustus / 1000).toFixed(0)}K</span>
-                                    </div>
-                                )}
-                                {sectorData.tahunan !== null && sectorData.tahunan !== undefined && (
-                                    <div>
-                                        <span className="text-muted-foreground">Thn: </span>
-                                        <span className={`font-mono ${isTotal ? "font-bold text-primary" : ""}`}>
-                                            Rp{(sectorData.tahunan / 1000).toFixed(0)}K
-                                        </span>
-                                    </div>
+                                {sectorData.agustus && (
+                                    <span className={isTotal ? "text-primary" : ""}>
+                                        {(sectorData.agustus / 1000).toFixed(0)}K
+                                    </span>
                                 )}
                             </div>
                         </div>
@@ -459,6 +449,9 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
             
             if (tahun) {
                 url += `/year/${tahun}`;
+            } else {
+                // Add trailing slash and pagination params for root endpoint
+                url += `/?skip=0&limit=100`;
             }
 
             const response = await fetch(url);
