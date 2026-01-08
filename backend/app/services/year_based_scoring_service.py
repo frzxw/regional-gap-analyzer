@@ -383,6 +383,65 @@ class YearBasedScoringService:
                     years.add(doc["tahun"])
         
         return sorted(list(years))
+    
+    async def get_national_statistics(self, year: int) -> Optional[Dict[str, Any]]:
+        """
+        Calculate national statistics for a specific year.
+        
+        Args:
+            year: Year to calculate statistics for
+            
+        Returns:
+            Dictionary with median score, leader, critical province, and population
+        """
+        # Get all scores for the year
+        all_scores = await self.calculate_all_scores_for_year(year)
+        
+        if not all_scores:
+            return None
+        
+        # Calculate median score
+        scores_only = [s["composite_score"] for s in all_scores]
+        median_score = float(np.median(scores_only))
+        
+        # Get leader (best performing province)
+        leader = all_scores[0] if all_scores else None
+        
+        # Get critical (worst performing province)
+        critical = all_scores[-1] if all_scores else None
+        
+        # Get total population from kependudukan collection
+        db = await get_database()
+        total_population = 0
+        
+        try:
+            # Sum all province populations for the year
+            cursor = db.kependudukan.find({"tahun": year})
+            async for doc in cursor:
+                # Get total population from data_tahunan.total field
+                pop_value = self._get_field_value(doc, "data_tahunan.total")
+                if pop_value:
+                    total_population += pop_value
+        except Exception as e:
+            print(f"Error calculating population: {e}")
+            total_population = 0
+        
+        return {
+            "year": year,
+            "median_score": round(median_score, 1),
+            "leader": {
+                "province_id": leader["province_id"],
+                "province_name": leader["province_name"],
+                "score": round(leader["composite_score"], 1)
+            } if leader else None,
+            "critical": {
+                "province_id": critical["province_id"],
+                "province_name": critical["province_name"],
+                "score": round(critical["composite_score"], 1)
+            } if critical else None,
+            "total_population": int(total_population),
+            "provinces_count": len(all_scores)
+        }
 
 
 # Singleton instance

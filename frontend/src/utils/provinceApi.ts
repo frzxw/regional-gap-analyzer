@@ -1,6 +1,6 @@
 /**
- * API Client for Year-Based Scoring
- * Provides typed functions for year-based scoring endpoints
+ * Province API Client
+ * API utilities for province-specific data and scoring
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
@@ -44,53 +44,39 @@ export interface ProvinceScore {
     province_name: string;
     year: number;
     composite_score: number;
-    rank?: number;
+    rank: number | null;
     collections_scored: number;
 }
 
 export interface ProvinceScoreDetailed extends ProvinceScore {
-    collection_scores: Record<string, number>;
+    collection_scores: Record<string, CollectionScore>;
 }
 
 export interface ScoreBreakdown {
     province_id: string;
-    province_name?: string;
+    province_name: string | null;
     year: number;
-    composite_score?: number;
-    rank?: number;
+    composite_score: number | null;
+    rank: number | null;
     collections: CollectionScore[];
 }
 
-export interface YearsResponse {
-    years: number[];
-    count: number;
-}
-
-export interface ProvinceInfo {
-    province_id: string;
-    province_name: string;
-    score: number;
-}
-
-export interface NationalStatistics {
-    year: number;
-    median_score: number;
-    leader: ProvinceInfo | null;
-    critical: ProvinceInfo | null;
-    total_population: number;
-    provinces_count: number;
-}
-
 // ============================================================================
-// Year-Based Scoring API
+// Province API
 // ============================================================================
 
-export const yearScoringApi = {
+export const provinceApi = {
     /**
-     * Get list of available years that have data
+     * Get province score with collection breakdown for a specific year
      */
-    getAvailableYears: () =>
-        fetchApi<YearsResponse>('/api/v1/year-scores/available-years'),
+    getProvinceScore: (provinceId: string, year: number) =>
+        fetchApi<ProvinceScoreDetailed>(`/api/v1/year-scores/${year}/${provinceId}`),
+
+    /**
+     * Get detailed score breakdown with raw values
+     */
+    getScoreBreakdown: (provinceId: string, year: number) =>
+        fetchApi<ScoreBreakdown>(`/api/v1/year-scores/${year}/${provinceId}/breakdown`),
 
     /**
      * Get all province scores for a specific year
@@ -99,32 +85,15 @@ export const yearScoringApi = {
         fetchApi<ProvinceScoreDetailed[]>(`/api/v1/year-scores/${year}`),
 
     /**
-     * Get specific province score for a year
-     */
-    getProvinceScore: (year: number, provinceId: string) =>
-        fetchApi<ProvinceScoreDetailed>(`/api/v1/year-scores/${year}/${provinceId}`),
-
-    /**
-     * Get detailed score breakdown for a province
-     */
-    getScoreBreakdown: (year: number, provinceId: string) =>
-        fetchApi<ScoreBreakdown>(`/api/v1/year-scores/${year}/${provinceId}/breakdown`),
-
-    /**
      * Get top performing provinces for a year
      */
-    getTopProvinces: (year: number, count: number = 5) =>
+    getTopProvinces: (year: number, count = 5) =>
         fetchApi<ProvinceScoreDetailed[]>(`/api/v1/year-scores/${year}/top?count=${count}`),
 
     /**
      * Get bottom performing provinces for a year
      */
-    getBottomProvinces: (year: number, count: number = 5) =>
+    getBottomProvinces: (year: number, count = 5) =>
         fetchApi<ProvinceScoreDetailed[]>(`/api/v1/year-scores/${year}/bottom?count=${count}`),
-
-    /**
-     * Get national statistics for a year
-     */
-    getStatistics: (year: number) =>
-        fetchApi<NationalStatistics>(`/api/v1/year-scores/${year}/statistics`),
 };
+

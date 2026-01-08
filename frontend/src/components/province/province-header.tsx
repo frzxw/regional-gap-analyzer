@@ -1,38 +1,38 @@
 "use client"
 
-import { useMemo } from "react"
+import { useEffect, useState } from "react"
 import { ChevronLeft, Share2, Info } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { PROVINCES, PRESETS } from "@/lib/constants"
+import { PROVINCES } from "@/lib/constants"
 import { useAppStore } from "@/lib/store"
-import { calculateCompositeScore, generateMockData } from "@/lib/scoring-engine"
 import { Badge } from "@/components/ui/badge"
+import { provinceApi, type ProvinceScoreDetailed } from "@/utils/provinceApi"
 
 export function ProvinceHeader({ id }: { id: string }) {
-  const { selectedYear, activePresetId, normalizationOverrides } = useAppStore()
+  const { selectedYear } = useAppStore()
   const province = PROVINCES.find((p) => p.id === id)
+  const [data, setData] = useState<ProvinceScoreDetailed | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const allData = useMemo(() => generateMockData(), [])
-  const yearData = useMemo(() => allData.filter((d) => d.year === selectedYear), [selectedYear, allData])
-  const activePreset = useMemo(() => PRESETS.find((p) => p.id === activePresetId) || PRESETS[0], [activePresetId])
-
-  const provinceData = yearData.find((d) => d.provinceId === id)
-
-  const score = useMemo(() => {
-    if (!provinceData) return 0
-    return calculateCompositeScore(provinceData, activePreset.weights, normalizationOverrides, yearData)
-  }, [provinceData, activePreset, normalizationOverrides, yearData])
-
-  const rank = useMemo(() => {
-    const scores = yearData
-      .map((d) => ({
-        id: d.provinceId,
-        score: calculateCompositeScore(d, activePreset.weights, normalizationOverrides, yearData),
-      }))
-      .sort((a, b) => a.score - b.score)
-    return scores.findIndex((s) => s.id === id) + 1
-  }, [yearData, id, activePreset, normalizationOverrides])
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      setError(null)
+      try {
+        const result = await provinceApi.getProvinceScore(id, selectedYear)
+        setData(result)
+      } catch (err) {
+        console.error("Failed to fetch province score:", err)
+        setError(err instanceof Error ? err.message : "Failed to load data")
+        setData(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    fetchData()
+  }, [id, selectedYear])
 
   if (!province) return null
 
@@ -48,15 +48,32 @@ export function ProvinceHeader({ id }: { id: string }) {
             Back to Overview
           </Link>
           <div className="space-y-4">
-            <h2 className="text-5xl font-black tracking-tighter md:text-7xl">{province.name}</h2>
+            <h2 className="text-5xl font-black tracking-tighter md:text-7xl">
+              {data?.province_name || province.name}
+            </h2>
             <div className="flex items-center gap-3">
-              <Badge
-                variant="secondary"
-                className="bg-[#333] text-xs text-white hover:bg-[#444] border-none px-3 py-1 font-bold rounded-full"
-              >
-                RANK #{rank}
-              </Badge>
-              <span className="text-xs font-bold text-white/40 uppercase tracking-wider">Nationwide Comparison</span>
+              {loading ? (
+                <div className="animate-pulse h-6 w-24 bg-white/20 rounded-full"></div>
+              ) : error ? (
+                <Badge
+                  variant="secondary"
+                  className="bg-red-500/20 text-xs text-white hover:bg-red-500/30 border-none px-3 py-1 font-bold rounded-full"
+                >
+                  ERROR
+                </Badge>
+              ) : data?.rank ? (
+                <>
+                  <Badge
+                    variant="secondary"
+                    className="bg-[#333] text-xs text-white hover:bg-[#444] border-none px-3 py-1 font-bold rounded-full"
+                  >
+                    RANK #{data.rank}
+                  </Badge>
+                  <span className="text-xs font-bold text-white/40 uppercase tracking-wider">
+                    Nationwide Comparison
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
         </div>
@@ -64,11 +81,21 @@ export function ProvinceHeader({ id }: { id: string }) {
         <div className="flex flex-col items-end gap-2 text-right">
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end">
-              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">Inequality Score</span>
-              <div className="flex items-baseline gap-1">
-                <span className="text-7xl font-black md:text-8xl">{score.toFixed(1)}</span>
-                <span className="text-2xl font-bold text-white/30">/100</span>
-              </div>
+              <span className="text-[10px] font-black uppercase tracking-[0.2em] text-white/40">
+                Inequality Score
+              </span>
+              {loading ? (
+                <div className="animate-pulse h-20 w-32 bg-white/20 rounded"></div>
+              ) : error ? (
+                <div className="text-2xl font-bold text-red-400">N/A</div>
+              ) : (
+                <div className="flex items-baseline gap-1">
+                  <span className="text-7xl font-black md:text-8xl">
+                    {data?.composite_score.toFixed(1) || "0.0"}
+                  </span>
+                  <span className="text-2xl font-bold text-white/30">/100</span>
+                </div>
+              )}
             </div>
             <div className="flex flex-col gap-2 ml-4">
               <Button
@@ -92,3 +119,4 @@ export function ProvinceHeader({ id }: { id: string }) {
     </div>
   )
 }
+
