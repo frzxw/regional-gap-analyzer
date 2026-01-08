@@ -369,29 +369,52 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
             return <span className="text-muted-foreground">-</span>;
         }
         
-        const sectorNames: Record<string, string> = {
-            pertanian_kehutanan_perikanan: "Pertanian",
-            pertambangan_penggalian: "Pertambangan",
-            industri_pengolahan: "Industri",
-            listrik_gas: "Listrik & Gas",
-            air_sampah_limbah_daurlulang: "Air & Limbah",
-            konstruksi: "Konstruksi",
-            perdagangan: "Perdagangan",
-            transportasi_pergudangan: "Transportasi",
-            akomodasi_makan_minum: "Akomodasi",
-            informasi_komunikasi: "Informasi",
-            jasa_keuangan: "Keuangan",
-            real_estate: "Real Estate",
-            jasa_perusahaan: "Jasa Perusahaan",
-            admin_pemerintahan: "Pemerintahan",
-            jasa_pendidikan: "Pendidikan",
-            jasa_kesehatan: "Kesehatan",
-            jasa_lainnya: "Jasa Lainnya",
-            total: "TOTAL"
+        const formatSectorName = (key: string): string => {
+            const mapping: Record<string, string> = {
+                pertanian: "Pertanian",
+                pertanian_kehutanan_perikanan: "Pertanian, Kehutanan & Perikanan",
+                pertambangan: "Pertambangan",
+                pertambangan_penggalian: "Pertambangan & Penggalian",
+                industri: "Industri",
+                industri_pengolahan: "Industri Pengolahan",
+                listrik_gas: "Listrik & Gas",
+                "listrik_&_gas": "Listrik & Gas",
+                air_sampah_limbah_daurlulang: "Air, Sampah, Limbah & Daur Ulang",
+                air_sampah_limbah_daur_ulang: "Air, Sampah, Limbah & Daur Ulang",
+                konstruksi: "Konstruksi",
+                perdagangan: "Perdagangan",
+                transportasi: "Transportasi",
+                transportasi_pergudangan: "Transportasi & Pergudangan",
+                akomodasi: "Akomodasi",
+                akomodasi_makan_minum: "Akomodasi & Makan Minum",
+                informasi: "Informasi",
+                informasi_komunikasi: "Informasi & Komunikasi",
+                keuangan: "Keuangan",
+                jasa_keuangan: "Jasa Keuangan",
+                real_estate: "Real Estate",
+                jasa_perusahaan: "Jasa Perusahaan",
+                pemerintahan: "Pemerintahan",
+                admin_pemerintahan: "Administrasi Pemerintahan",
+                pendidikan: "Pendidikan",
+                jasa_pendidikan: "Jasa Pendidikan",
+                kesehatan: "Kesehatan",
+                jasa_kesehatan: "Jasa Kesehatan & Kegiatan Sosial",
+                jasa_lainnya: "Jasa Lainnya",
+                total: "TOTAL"
+            };
+            
+            if (mapping[key.toLowerCase()]) {
+                return mapping[key.toLowerCase()];
+            }
+            
+            // Auto-format: capitalize and replace underscores
+            return key.split('_')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ');
         };
         
         return (
-            <div className="text-xs space-y-0.5 max-w-[280px]">
+            <div className="text-xs space-y-0.5 max-w-[340px]">
                 {Object.entries(item.sektor).map(([sectorKey, sectorData]) => {
                     if (!sectorData) return null;
                     
@@ -401,18 +424,18 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
                     const isTotal = sectorKey === 'total';
                     
                     return (
-                        <div key={sectorKey} className={`flex items-start gap-2 text-[10px] ${isTotal ? "pt-1 mt-0.5 border-t font-semibold" : ""}`}>
-                            <div className={`min-w-[85px] text-right ${isTotal ? "font-bold" : "text-muted-foreground"}`}>
-                                {sectorNames[sectorKey] || sectorKey}:
+                        <div key={sectorKey} className={`flex justify-between items-center gap-3 text-[10px] ${isTotal ? "pt-1 mt-0.5 border-t font-semibold" : ""}`}>
+                            <div className={`${isTotal ? "font-bold" : "text-muted-foreground"}`}>
+                                {formatSectorName(sectorKey)}:
                             </div>
-                            <div className="flex gap-2 font-mono">
+                            <div className="flex gap-3 font-mono tabular-nums">
                                 {sectorData.februari && (
-                                    <span className={isTotal ? "text-primary" : ""}>
+                                    <span className={`min-w-[48px] text-right ${isTotal ? "text-primary font-bold" : ""}`}>
                                         {(sectorData.februari / 1000).toFixed(0)}K
                                     </span>
                                 )}
                                 {sectorData.agustus && (
-                                    <span className={isTotal ? "text-primary" : ""}>
+                                    <span className={`min-w-[48px] text-right ${isTotal ? "text-primary font-bold" : ""}`}>
                                         {(sectorData.agustus / 1000).toFixed(0)}K
                                     </span>
                                 )}
