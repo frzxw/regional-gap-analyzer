@@ -620,7 +620,7 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => onEdit?.(item)}
+                                                    onClick={() => onEdit?.({ ...item, indicator_code: indicator })}
                                                     title="Edit"
                                                 >
                                                     <Pencil className="w-4 h-4" />

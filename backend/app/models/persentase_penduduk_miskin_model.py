@@ -62,6 +62,7 @@ class PersentasePendudukMiskinUpdateRequest(BaseModel):
     data_semester_1: Optional[DataSemesterKemiskinan] = None
     data_semester_2: Optional[DataSemesterKemiskinan] = None
     data_tahunan: Optional[DataSemesterKemiskinan] = None
+    value: Optional[float] = Field(None, description="Simplified value field for single-value updates")
 
 
 class PersentasePendudukMiskinResponse(BaseModel):

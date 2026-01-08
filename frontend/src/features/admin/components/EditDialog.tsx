@@ -41,15 +41,22 @@ export function EditDialog({ open, onOpenChange, data, onSave }: EditDialogProps
     const handleSave = async () => {
         if (!data) return;
 
+        const numValue = parseFloat(value);
+        if (value.trim() === "" || isNaN(numValue)) {
+            alert("Nilai harus berupa angka yang valid");
+            return;
+        }
+
         setLoading(true);
         try {
             await onSave({
                 ...data,
-                value: parseFloat(value),
+                value: numValue,
             });
             onOpenChange(false);
         } catch (error) {
             console.error("Failed to save:", error);
+            alert(error instanceof Error ? error.message : "Gagal menyimpan data");
         } finally {
             setLoading(false);
         }

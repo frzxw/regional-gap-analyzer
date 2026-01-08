@@ -60,6 +60,7 @@ class KependudukanCreateRequest(BaseModel):
 class KependudukanUpdateRequest(BaseModel):
     """Request model for updating kependudukan data."""
     data: Optional[DataKependudukan] = None
+    value: Optional[float] = Field(None, description="Simplified value field for single-value updates")
 
 
 class KependudukanResponse(BaseModel):

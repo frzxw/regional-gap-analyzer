@@ -56,6 +56,7 @@ class RataRataUpahBersihCreateRequest(BaseModel):
 class RataRataUpahBersihUpdateRequest(BaseModel):
     """Request model for updating rata_rata_upah_bersih data."""
     sektor: Optional[Dict[str, DataPeriodeUpah]] = None
+    value: Optional[float] = Field(None, description="Simplified value field for single-value updates")
 
 
 class RataRataUpahBersihResponse(BaseModel):

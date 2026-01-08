@@ -55,6 +55,7 @@ class InflasiTahunanUpdateRequest(BaseModel):
     """Request model for updating inflasi_tahunan data."""
     data_bulanan: Optional[Dict[str, Optional[float]]] = None
     tahunan: Optional[float] = None
+    value: Optional[float] = Field(None, description="Simplified value field for single-value updates")
 
 
 class InflasiTahunanResponse(BaseModel):
