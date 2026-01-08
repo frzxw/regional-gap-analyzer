@@ -41,12 +41,12 @@ export default function AdminImportPage() {
                 ipm: "indeks-pembangunan-manusia",
                 tpt: "tingkat-pengangguran-terbuka",
                 kependudukan: "kependudukan",
-                pdrb_per_kapita: "pdrb-perkapita",
+                pdrb_per_kapita: "pdrb-per-kapita",
                 ihk: "indeks-harga-konsumen",
                 inflasi_tahunan: "inflasi-tahunan",
                 persentase_penduduk_miskin: "persentase-penduduk-miskin",
                 angkatan_kerja: "angkatan-kerja",
-                rata_rata_upah_bersih: "rata-rata-upah",
+                rata_rata_upah_bersih: "rata-rata-upah-bersih",
             };
             const endpoint = mapping[indicatorCode] || indicatorCode;
 
@@ -59,6 +59,8 @@ export default function AdminImportPage() {
                     data_semester_2: data.data_semester_2,
                     data_tahunan: data.data_tahunan,
                 };
+            } else if (indicatorCode === "pdrb_per_kapita") {
+                payload = { data_ribu_rp: data.data_ribu_rp };
             } else if (indicatorCode === "tpt" || indicatorCode === "kependudukan") {
                 payload = { data: data.data };
             } else if (indicatorCode === "angkatan_kerja") {
@@ -73,8 +75,14 @@ export default function AdminImportPage() {
                 payload = { value: data.value };
             }
 
+            let url = `${API_BASE}/api/v1/${endpoint}/${data.province_id}/${data.tahun}`;
+
+            if (indicatorCode === "pdrb_per_kapita" && data.indikator) {
+                url += `/${data.indikator}`;
+            }
+
             const response = await fetch(
-                `${API_BASE}/api/v1/${endpoint}/${data.province_id}/${data.tahun}`,
+                url,
                 {
                     method: "PUT",
                     headers: { "Content-Type": "application/json" },
@@ -191,7 +199,7 @@ export default function AdminImportPage() {
 
                     <TabsContent value="data">
                         <DataTable
-                            key={refreshKey}
+                            refreshTrigger={refreshKey}
                             onEdit={handleEdit}
                             onDelete={() => setRefreshKey(prev => prev + 1)}
                         />

@@ -150,6 +150,7 @@ interface DataItem {
 interface DataTableProps {
     onEdit?: (item: DataItem) => void;
     onDelete?: (item: DataItem) => void;
+    refreshTrigger?: number;
 }
 
 /**
@@ -431,11 +432,11 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
                 jasa_lainnya: "Jasa Lainnya",
                 total: "TOTAL"
             };
-            
+
             if (mapping[key.toLowerCase()]) {
                 return mapping[key.toLowerCase()];
             }
-            
+
             // Auto-format: capitalize and replace underscores
             return key.split('_')
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -485,7 +486,7 @@ function renderIndicatorValue(item: DataItem, indicatorCode: string): React.Reac
     );
 }
 
-export function DataTable({ onEdit, onDelete }: DataTableProps) {
+export function DataTable({ onEdit, onDelete, refreshTrigger }: DataTableProps) {
     const [indicator, setIndicator] = useState("gini_ratio");
     const [tahun, setTahun] = useState("");
     const [data, setData] = useState<DataItem[]>([]);
@@ -535,6 +536,12 @@ export function DataTable({ onEdit, onDelete }: DataTableProps) {
     useEffect(() => {
         fetchData();
     }, [fetchData]);
+
+    useEffect(() => {
+        if (refreshTrigger !== undefined && refreshTrigger > 0) {
+            fetchData();
+        }
+    }, [refreshTrigger, fetchData]);
 
     const handleDelete = async (item: DataItem) => {
         if (!confirm(`Hapus data ${item.province_id} tahun ${item.tahun}?`)) {

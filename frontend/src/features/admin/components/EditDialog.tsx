@@ -219,6 +219,25 @@ export function EditDialog({ open, onOpenChange, data, onSave }: EditDialogProps
             );
         }
 
+        // PDRB - data_ribu_rp
+        if (indicatorCode === "pdrb_per_kapita") {
+            return (
+                <div className="grid grid-cols-4 items-center gap-4">
+                    <Label className="text-right">Ribu Rp</Label>
+                    <Input
+                        type="number"
+                        step="0.01"
+                        value={formData.data_ribu_rp ?? ""}
+                        onChange={(e) => {
+                            const val = e.target.value === "" ? null : parseFloat(e.target.value);
+                            setFormData((prev: any) => ({ ...prev, data_ribu_rp: val }));
+                        }}
+                        className="col-span-3"
+                    />
+                </div>
+            );
+        }
+
         // DEFAULT - Simple value field
         return (
             <div className="grid grid-cols-4 items-center gap-4">
