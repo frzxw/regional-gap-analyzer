@@ -12,6 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface EditDialogProps {
     open: boolean;
@@ -23,6 +30,7 @@ interface EditDialogProps {
 export function EditDialog({ open, onOpenChange, data, onSave }: EditDialogProps) {
     const [formData, setFormData] = useState<any>({});
     const [loading, setLoading] = useState(false);
+    const [selectedSector, setSelectedSector] = useState("pertanian");
 
     useEffect(() => {
         if (data) {
@@ -234,6 +242,107 @@ export function EditDialog({ open, onOpenChange, data, onSave }: EditDialogProps
                         }}
                         className="col-span-3"
                     />
+                </div>
+            );
+        }
+
+        // IHK & INFLASI
+        if (indicatorCode === "ihk" || indicatorCode === "inflasi_tahunan") {
+            const months = ['januari', 'februari', 'maret', 'april', 'mei', 'juni',
+                'juli', 'agustus', 'september', 'oktober', 'november', 'desember'];
+            return (
+                <Tabs defaultValue="tahunan" className="w-full">
+                    <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="tahunan">Tahunan</TabsTrigger>
+                        <TabsTrigger value="bulanan">Bulanan</TabsTrigger>
+                    </TabsList>
+                    <TabsContent value="tahunan" className="pt-4">
+                        <div className="grid grid-cols-4 items-center gap-4">
+                            <Label className="text-right">Tahunan</Label>
+                            <Input
+                                type="number" step="0.01"
+                                value={formData.tahunan ?? ""}
+                                onChange={(e) => {
+                                    const val = e.target.value === "" ? null : parseFloat(e.target.value);
+                                    setFormData((prev: any) => ({ ...prev, tahunan: val }));
+                                }}
+                                className="col-span-3"
+                            />
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="bulanan">
+                        <div className="grid grid-cols-2 gap-4 h-[300px] overflow-y-auto pr-2">
+                            {months.map(m => (
+                                <div key={m} className="space-y-1">
+                                    <Label className="text-xs capitalize">{m}</Label>
+                                    <Input
+                                        type="number" step="0.01"
+                                        value={getNestedValue(formData, `data_bulanan.${m}`)}
+                                        onChange={(e) => updateNestedValue(`data_bulanan.${m}`, e.target.value)}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </TabsContent>
+                </Tabs>
+            );
+        }
+
+        // RATA RATA UPAH BERSIH
+        if (indicatorCode === "rata_rata_upah_bersih") {
+            const sectors = [
+                { value: "pertanian", label: "Pertanian" },
+                { value: "pertanian_kehutanan_perikanan", label: "Pertanian, Kehutanan & Perikanan" },
+                { value: "pertambangan_penggalian", label: "Pertambangan" },
+                { value: "industri_pengolahan", label: "Industri" },
+                { value: "listrik_gas", label: "Listrik & Gas" },
+                { value: "air_sampah_limbah_daurlulang", label: "Air & Limbah" },
+                { value: "konstruksi", label: "Konstruksi" },
+                { value: "perdagangan", label: "Perdagangan" },
+                { value: "transportasi_pergudangan", label: "Transportasi" },
+                { value: "akomodasi_makan_minum", label: "Akomodasi" },
+                { value: "informasi_komunikasi", label: "Informasi" },
+                { value: "jasa_keuangan", label: "Keuangan" },
+                { value: "real_estate", label: "Real Estate" },
+                { value: "jasa_perusahaan", label: "Jasa Perusahaan" },
+                { value: "admin_pemerintahan", label: "Pemerintahan" },
+                { value: "jasa_pendidikan", label: "Pendidikan" },
+                { value: "jasa_kesehatan", label: "Kesehatan" },
+                { value: "jasa_lainnya", label: "Jasa Lainnya" },
+                { value: "total", label: "TOTAL" }
+            ];
+
+            return (
+                <div className="space-y-4">
+                    <Select value={selectedSector} onValueChange={setSelectedSector}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Pilih Sektor" />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[300px]">
+                            {sectors.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+
+                    <div className="space-y-3 pt-2 border-t">
+                        <Label className="font-semibold text-sm">
+                            Data Sektor: {sectors.find(s => s.value === selectedSector)?.label}
+                        </Label>
+                        {[
+                            { key: 'februari', label: 'Februari' },
+                            { key: 'agustus', label: 'Agustus' },
+                            { key: 'tahunan', label: 'Tahunan' }
+                        ].map(period => (
+                            <div key={period.key} className="grid grid-cols-4 items-center gap-4">
+                                <Label className="text-right text-sm">{period.label}</Label>
+                                <Input
+                                    type="number" step="1"
+                                    value={getNestedValue(formData, `sektor.${selectedSector}.${period.key}`)}
+                                    onChange={(e) => updateNestedValue(`sektor.${selectedSector}.${period.key}`, e.target.value)}
+                                    className="col-span-3"
+                                />
+                            </div>
+                        ))}
+                    </div>
                 </div>
             );
         }

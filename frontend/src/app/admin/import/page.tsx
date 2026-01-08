@@ -70,6 +70,13 @@ export default function AdminImportPage() {
                 };
             } else if (indicatorCode === "ipm") {
                 payload = { data: data.data };
+            } else if (indicatorCode === "ihk" || indicatorCode === "inflasi_tahunan") {
+                payload = {
+                    data_bulanan: data.data_bulanan,
+                    tahunan: data.tahunan
+                };
+            } else if (indicatorCode === "rata_rata_upah_bersih") {
+                payload = { sektor: data.sektor };
             } else {
                 // Default: simple value
                 payload = { value: data.value };
