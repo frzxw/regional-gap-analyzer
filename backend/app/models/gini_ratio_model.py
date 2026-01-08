@@ -62,6 +62,7 @@ class GiniRatioUpdateRequest(BaseModel):
     data_semester_1: Optional[DataSemester] = None
     data_semester_2: Optional[DataSemester] = None
     data_tahunan: Optional[DataSemester] = None
+    value: Optional[float] = Field(None, description="Simplified value field for single-value updates")
 
 
 class GiniRatioResponse(BaseModel):

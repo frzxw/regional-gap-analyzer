@@ -46,6 +46,7 @@ class PDRBPerKapitaCreateRequest(BaseModel):
 class PDRBPerKapitaUpdateRequest(BaseModel):
     """Request model for updating PDRB per kapita data."""
     data_ribu_rp: Optional[float] = None
+    value: Optional[float] = Field(None, description="Simplified value field for single-value updates")
 
 
 class PDRBPerKapitaResponse(BaseModel):

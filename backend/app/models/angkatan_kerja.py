@@ -68,6 +68,7 @@ class AngkatanKerjaUpdateRequest(BaseModel):
     """Request model for updating angkatan kerja data."""
     data_februari: Optional[DataPeriode] = None
     data_agustus: Optional[DataPeriode] = None
+    value: Optional[float] = Field(None, description="Simplified value field for single-value updates")
 
 
 class AngkatanKerjaResponse(BaseModel):

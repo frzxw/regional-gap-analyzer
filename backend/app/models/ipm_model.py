@@ -45,6 +45,7 @@ class IPMCreateRequest(BaseModel):
 class IPMUpdateRequest(BaseModel):
     """Request model for updating IPM data."""
     data: Optional[float] = None
+    value: Optional[float] = Field(None, description="Simplified value field for single-value updates")
 
 
 class IPMResponse(BaseModel):

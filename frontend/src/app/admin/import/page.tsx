@@ -33,9 +33,9 @@ export default function AdminImportPage() {
     const handleSave = async (data: any) => {
         try {
             const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-            
+
             // Map indicator code to endpoint
-            const indicatorCode = data.indikator || data.indicator_code || "gini_ratio";
+            const indicatorCode = data.indicator_code || data.indikator || "gini_ratio";
             const mapping: Record<string, string> = {
                 gini_ratio: "gini-ratio",
                 ipm: "indeks-pembangunan-manusia",
@@ -49,7 +49,7 @@ export default function AdminImportPage() {
                 rata_rata_upah_bersih: "rata-rata-upah",
             };
             const endpoint = mapping[indicatorCode] || indicatorCode;
-            
+
             const response = await fetch(
                 `${API_BASE}/api/v1/${endpoint}/${data.province_id}/${data.tahun}`,
                 {
@@ -59,7 +59,10 @@ export default function AdminImportPage() {
                 }
             );
 
-            if (!response.ok) throw new Error("Failed to update");
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.detail || "Failed to update");
+            }
 
             setRefreshKey((prev) => prev + 1); // Trigger table refresh
         } catch (error) {
