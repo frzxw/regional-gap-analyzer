@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { useImport, ImportForm, ImportHistory, DataTable, EditDialog } from "@/features/admin";
+import { useImport, ImportForm, ImportHistory, DataTable, EditDialog, ManualInputSelector } from "@/features/admin";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, Database, FileText } from "lucide-react";
+import { Upload, Database, FileText, Edit3 } from "lucide-react";
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 
@@ -139,10 +139,14 @@ export default function AdminImportPage() {
             {/* Main Content */}
             <main className="container mx-auto px-4 py-8">
                 <Tabs defaultValue="import" className="max-w-6xl mx-auto">
-                    <TabsList className="grid w-full grid-cols-2 mb-8">
+                    <TabsList className="grid w-full grid-cols-3 mb-8">
                         <TabsTrigger value="import" className="flex items-center gap-2">
                             <Upload className="w-4 h-4" />
                             Import Data (CSV/Excel)
+                        </TabsTrigger>
+                        <TabsTrigger value="manual" className="flex items-center gap-2">
+                            <Edit3 className="w-4 h-4" />
+                            Input Manual
                         </TabsTrigger>
                         <TabsTrigger value="data" className="flex items-center gap-2">
                             <Database className="w-4 h-4" />
@@ -200,6 +204,20 @@ export default function AdminImportPage() {
                                 <p className="text-xs text-muted-foreground/70 mt-2">
                                     💡 Import menggunakan endpoint spesifik per indikator untuk akurasi maksimal
                                 </p>
+                            </CardContent>
+                        </Card>
+                    </TabsContent>
+
+                    <TabsContent value="manual" className="space-y-8">
+                        <Card className="bg-card/50 backdrop-blur-sm border-muted shadow-xl">
+                            <CardHeader>
+                                <CardTitle>Input Manual Data Indikator</CardTitle>
+                                <CardDescription>
+                                    Masukkan data indikator secara manual per provinsi dan tahun
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <ManualInputSelector />
                             </CardContent>
                         </Card>
                     </TabsContent>
